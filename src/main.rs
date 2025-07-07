@@ -10,9 +10,11 @@ fn main() -> std::io::Result<()> {
     builder.add_file(r"C:\Users\davit.baghdasaryan1\Coding\dit\src\lib.rs")?;
     builder.add_file(r"C:\Users\davit.baghdasaryan1\Coding\dit\src\trees.rs")?;
 
-    let result = tree_mgr.create_tree(&builder)?;
+    let tree_hash = tree_mgr.create_tree(&builder)?;
 
-    println!("{:?} {:?}", result.hash, result.files);
+    println!("{:?}", tree_hash);
+
+    println!("{:?}", tree_mgr.get_tree(tree_hash));
 
     Ok(())
 }

@@ -1,10 +1,12 @@
 ﻿use crate::blobs::BlobMgr;
 use crate::constants::TREES_ROOT;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::collections::BTreeMap;
 use std::io;
 use std::io::Error;
 use sha2::{Sha256, Digest};
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 /// This class is a tree builder, which may later be used
 /// in [`TreeMgr`] to create it
@@ -41,16 +43,6 @@ impl TreeBuilder {
 
         Ok(())
     }
-}
-
-
-/// Represents a tree (which is already built)
-pub struct Tree {
-    /// Maps the relative file paths to corresponding blob hashes
-    pub files: BTreeMap<PathBuf, String>,
-
-    /// Represents the tree hash
-    pub hash: String,
 }
 
 
@@ -99,18 +91,18 @@ impl TreeMgr {
     }
 }
 
-
+/// API
 impl TreeMgr {
     /// Adds a target tree and returns the tree hash
-    pub fn create_tree(&self, tree: &TreeBuilder) -> io::Result<Tree> {
+    pub fn create_tree(&self, tree: &TreeBuilder) -> io::Result<String> {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree
         // hash being dependent on traversal order
         let mut files: BTreeMap<PathBuf, String> = BTreeMap::new();
 
         for path in &tree.files {
-            let blob_hash = self.blob_mgr.add_file(&path)?;
-            let relative_path = self.get_relative_path(&path)?;
+            let blob_hash = self.blob_mgr.create_blob(path)?;
+            let relative_path = self.get_relative_path(path)?;
             files.insert(relative_path, blob_hash);
         }
 
@@ -119,19 +111,37 @@ impl TreeMgr {
             hasher.update(path.to_string_lossy().as_bytes());
             hasher.update(blob_hash);
         }
-
         let hash = format!("{:x}", hasher.finalize());
 
-        Ok(Tree {
-            files,
-            hash
-        })
+        let tree = Tree { files, hash: hash.clone() };
+        self.write_tree(&tree)?;
+
+        Ok(hash)
+    }
+
+    /// Reads a tree from tree hash
+    pub fn get_tree(&self, tree_hash: String) -> io::Result<Tree> {
+        let path = self.root_path.join(tree_hash.clone());
+        let serialized = std::fs::read_to_string(path)?;
+        let tree: Tree = serde_json::from_str(&serialized)?;
+        Ok(tree)
+    }
+}
+
+/// Private helper methods
+impl TreeMgr {
+    /// Writes the tree to the trees directory
+    fn write_tree(&self, tree: &Tree) -> io::Result<()> {
+        let serialized = serde_json::to_string_pretty(&tree)?;
+        let path = self.root_path.join(tree.hash.clone());
+        std::fs::write(path, serialized)?;
+        Ok(())
     }
 
     /// Returns the path of a given path relative to the project path. \
     /// For example, if the project path is `D:\Projects\project1\` and the given path is
     /// `D:\Projects\project1\src\main.py`, this method will return `src\main.py`
-    fn get_relative_path(&self, path: &PathBuf) -> Result<PathBuf, Error> {
+    fn get_relative_path(&self, path: &Path) -> Result<PathBuf, Error> {
         match path.strip_prefix(&self.project_path) {
             Err(_) => Err(Error::new(
                 io::ErrorKind::InvalidInput,
@@ -141,4 +151,16 @@ impl TreeMgr {
             Ok(path) => Ok(path.to_path_buf()),
         }
     }
+}
+
+
+
+/// Represents the tree object
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tree {
+    /// Maps the relative file paths to corresponding blob hashes
+    pub files: BTreeMap<PathBuf, String>,
+
+    /// Represents the tree hash
+    pub hash: String,
 }

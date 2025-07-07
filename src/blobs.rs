@@ -38,7 +38,7 @@ impl BlobMgr {
     const BUFFER_SIZE: usize = 8192;
 
     /// Adds a target file to the blobs and returns the hash \
-    pub fn add_file<P: Into<PathBuf>>(&self, path: P) -> io::Result<String> {
+    pub fn create_blob<P: Into<PathBuf>>(&self, path: P) -> io::Result<String> {
         let path = path.into();
 
         let mut reader = BufReader::new(File::open(path)?);
@@ -71,7 +71,7 @@ impl BlobMgr {
     }
 
     /// Returns the blob content reader based on it's hash
-    pub fn get_reader<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
+    pub fn get_blob<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
         let path = self.root_path.join(hash.into());
         let reader = BufReader::new(File::open(path)?);
         Ok(reader)
