@@ -1,4 +1,4 @@
-use crate::constants::{COMMITS_ROOT, STAGED_FILE, HEAD_FILE};
+use crate::constants::{COMMITS_ROOT, HEAD_FILE};
 use crate::trees::{StagedFiles, TreeMgr};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -10,9 +10,6 @@ use std::time::SystemTime;
 pub struct CommitMgr {
     /// Represents the commits directory, [`COMMITS_ROOT`]
     root_path: PathBuf,
-
-    /// Represents the staged file, [`STAGED_FILE`]
-    staged_file: PathBuf,
 
     /// Represents the head file, [`HEAD_FILE`]
     head_file: PathBuf,
@@ -35,13 +32,9 @@ impl CommitMgr {
         }
 
         let root = project_path.join(COMMITS_ROOT);
-        let staged_file = project_path.join(STAGED_FILE);
         let head_file = project_path.join(HEAD_FILE);
         if !root.is_dir() {
             std::fs::create_dir_all(&root)?;
-        }
-        if !staged_file.exists() {
-            std::fs::write(&staged_file, "")?;
         }
         if !head_file.exists() {
             std::fs::write(&head_file, "")?;
@@ -49,7 +42,6 @@ impl CommitMgr {
 
         Ok(Self {
             root_path: root,
-            staged_file,
             head_file,
             tree_mgr,
         })
@@ -112,39 +104,6 @@ impl CommitMgr {
     }
 }
 
-/// Manage staged files and head
-impl CommitMgr {
-    pub fn register_staged_files(&self, staged_files: StagedFiles) -> io::Result<()> {
-        let serialized = serde_json::to_string_pretty(&staged_files)?;
-        std::fs::write(&self.staged_file, serialized)?;
-        Ok(())
-    }
-
-    pub fn read_staged_files(&self) -> io::Result<StagedFiles> {
-        let serialized = std::fs::read_to_string(&self.staged_file)?;
-        let staged_files = if serialized.is_empty() {
-            StagedFiles::new()
-        } else {
-            serde_json::from_str(&serialized)?
-        };
-
-        Ok(staged_files)
-    }
-
-    pub fn register_head(&self, hash: String) -> io::Result<()> {
-        std::fs::write(&self.head_file, hash)?;
-        Ok(())
-    }
-
-    pub fn read_head(&self) -> io::Result<Option<String>> {
-        let serialized = std::fs::read_to_string(&self.head_file)?;
-        if serialized.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(serialized))
-        }
-    }
-}
 
 /// Private helper methods
 impl CommitMgr {

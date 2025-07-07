@@ -1,7 +1,10 @@
-﻿use std::io;
+﻿use std::fs::File;
+use std::io;
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
+use crate::blobs::BlobMgr;
 use crate::commits::CommitMgr;
-use crate::constants::{DIT_ROOT};
+use crate::constants::{DIT_ROOT, STAGED_ROOT, STAGED_FILE, HEAD_FILE};
 use crate::trees::{StagedFiles};
 
 /// Main API for working with the Dit version control system
@@ -11,6 +14,15 @@ pub struct Dit {
 
     /// Represents the `.dit` path, [`DIT_ROOT`]
     root: PathBuf,
+
+    /// Represents the staged files root, [`STAGED_ROOT`]
+    staged_root: PathBuf,
+
+    /// Represents the staged file location, [`STAGED_FILE`]
+    staged_file: PathBuf,
+
+    /// Represents the head file location, [`HEAD_FILE`]
+    head_file: PathBuf,
 
     /// Represents the commit manager
     commit_mgr: CommitMgr,
@@ -36,15 +48,31 @@ impl Dit {
         }
 
         let commit_mgr = CommitMgr::from_project(&project_path)?;
-        let staged_files = commit_mgr.read_staged_files()?;
-        let head = commit_mgr.read_head()?;
 
-        Ok(Self{
+        let staged_root = project_path.join(STAGED_ROOT);
+        let staged_file = project_path.join(STAGED_FILE);
+
+        if !staged_root.exists() {
+            std::fs::create_dir_all(&staged_root)?;
+        }
+
+        if !staged_file.exists() {
+            std::fs::write(&staged_file, "")?;
+        }
+        let staged_files = Self::load_staged_files(staged_file.clone())?;
+
+        let head_path = project_path.join(HEAD_FILE);
+        let head_file = Self::load_head(&head_path)?;
+
+        Ok(Self {
             project_path,
             root,
+            staged_root,
+            staged_file,
+            head_file: head_path,
             commit_mgr,
             staged_files,
-            head
+            head: head_file,
         })
     }
 }
@@ -61,17 +89,21 @@ impl Dit {
     {
         let author = author.into();
         let message = message.into();
-        let parent_commit_hash = self.commit_mgr.read_head()?;
+        let parent_commit_hash = Self::load_head(&self.head_file)?;
         let commit_hash = self.commit_mgr.create_commit(
             author, message, self.staged_files.clone(), parent_commit_hash)?;
 
         // change the head
         self.head = Some(commit_hash.clone());
-        self.commit_mgr.register_head(commit_hash)?;
+        Self::store_head(&self.head_file, commit_hash)?;
 
         // remove the staged files
+        for file in &self.staged_files.files {
+            std::fs::remove_file(file)?;
+        }
+
         self.staged_files = StagedFiles::new();
-        self.commit_mgr.register_staged_files(self.staged_files.clone())?;
+        Self::store_staged_files(&self.staged_file, self.staged_files.clone())?;
 
         Ok(())
     }
@@ -80,23 +112,75 @@ impl Dit {
 
 /// Manage file staging/unstaging
 impl Dit {
-    pub fn stage_file<P: Into<PathBuf>>(&mut self, file_path: P) -> io::Result<()> {
-        // add the file to staged files
-        self.staged_files.add_file(file_path)?;
+    const BUFFER_SIZE: usize = 8192;
 
-        // register the changes
-        self.commit_mgr.register_staged_files(self.staged_files.clone())?;
+    pub fn stage_file<P: Into<PathBuf>>(&mut self, file_path: P) -> io::Result<()> {
+        let file_path = file_path.into();
+
+        let mut reader = BufReader::new(File::open(&file_path)?);
+
+        let write_to = self.staged_root.join(file_path.file_name().unwrap());
+        let mut writer = BufWriter::new(File::create(&write_to)?);
+
+        let mut buffer: [u8; Self::BUFFER_SIZE] = [0; Self::BUFFER_SIZE];
+
+        loop {
+            let n = reader.read(&mut buffer)?;
+            if n == 0 {
+                break;
+            }
+            writer.write_all(&buffer[..n])?;
+        }
+
+        self.staged_files.add_file(&write_to)?;
+
+        Self::store_staged_files(&self.staged_file, self.staged_files.clone())?;
 
         Ok(())
     }
 
     pub fn unstage_file<P: Into<PathBuf>>(&mut self, file_path: P) -> io::Result<()> {
-        // remove the file from the staged files
         self.staged_files.remove_file(file_path);
+        Self::store_staged_files(&self.staged_root, self.staged_files.clone())?;
+        Ok(())
+    }
+}
 
-        // register the changes
-        self.commit_mgr.register_staged_files(self.staged_files.clone())?;
 
+/// Private helper methods
+impl Dit {
+    fn load_head<P: Into<PathBuf>>(path: P) -> io::Result<Option<String>> {
+        let path = path.into();
+        let serialized = std::fs::read_to_string(&path)?;
+        if serialized.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(serialized))
+        }
+    }
+
+    fn store_head<P: Into<PathBuf>>(path: P, hash: String) -> io::Result<()> {
+        let path = path.into();
+        std::fs::write(path, hash)?;
+        Ok(())
+    }
+
+    fn load_staged_files<P: Into<PathBuf>>(path: P) -> io::Result<StagedFiles> {
+        let path = path.into();
+        let serialized = std::fs::read_to_string(path)?;
+        let staged_files = if serialized.is_empty() {
+            StagedFiles::new()
+        } else {
+            serde_json::from_str(&serialized)?
+        };
+
+        Ok(staged_files)
+    }
+
+    fn store_staged_files<P: Into<PathBuf>>(path: P, staged_files: StagedFiles) -> io::Result<()> {
+        let path = path.into();
+        let serialized = serde_json::to_string_pretty(&staged_files)?;
+        std::fs::write(path, serialized)?;
         Ok(())
     }
 }
