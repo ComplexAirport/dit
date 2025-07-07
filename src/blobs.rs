@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// Manages the blobs in our Dit version control system
 pub struct BlobMgr {
     /// Represents the blobs directory, `.dit/blobs`
-    root: PathBuf,
+    root_path: PathBuf,
 }
 
 /// Constructors
@@ -28,7 +28,7 @@ impl BlobMgr {
         }
 
         Ok(Self {
-            root,
+            root_path: root,
         })
     }
 }
@@ -42,7 +42,7 @@ impl BlobMgr {
         let path = path.into();
 
         let mut reader = BufReader::new(File::open(path)?);
-        let temp_file_path = self.root.join(".temp");
+        let temp_file_path = self.root_path.join(".temp");
         let mut temp_file = BufWriter::new(File::create(&temp_file_path)?);
         let mut hasher = Sha256::new();
 
@@ -57,7 +57,7 @@ impl BlobMgr {
         }
         
         let hash = format!("{:x}", hasher.finalize());
-        let target_file = self.root.join(&hash);
+        let target_file = self.root_path.join(&hash);
 
         if target_file.is_file() {
             // if the blob already exists, we just remove the newly created temp file
@@ -72,7 +72,7 @@ impl BlobMgr {
 
     /// Returns the blob content reader based on it's hash
     pub fn get_reader<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
-        let path = self.root.join(hash.into());
+        let path = self.root_path.join(hash.into());
         let reader = BufReader::new(File::open(path)?);
         Ok(reader)
     }

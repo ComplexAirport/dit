@@ -1,13 +1,18 @@
 use std::path::PathBuf;
-use dit::blobs::BlobMgr;
+use dit::trees::{TreeBuilder, TreeMgr};
 
 fn main() -> std::io::Result<()> {
-    let root = PathBuf::from(".dit");
-    std::fs::create_dir_all(&root).expect("something failed");
+    let project = PathBuf::from(r"C:\Users\davit.baghdasaryan1\Coding\dit");
 
-    let blobmgr = BlobMgr::from_dit_root(root)?;
+    let tree_mgr = TreeMgr::from_project(project)?;
 
-    blobmgr.add_file(r"D:\Programming\Rust\dit\src\main.rs")?;
+    let mut builder = TreeBuilder::new();
+    builder.add_file(r"C:\Users\davit.baghdasaryan1\Coding\dit\src\lib.rs")?;
+    builder.add_file(r"C:\Users\davit.baghdasaryan1\Coding\dit\src\trees.rs")?;
+
+    let result = tree_mgr.create_tree(&builder)?;
+
+    println!("{:?} {:?}", result.hash, result.files);
 
     Ok(())
 }
