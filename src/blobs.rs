@@ -1,3 +1,4 @@
+use crate::constants::BLOBS_ROOT;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
@@ -11,19 +12,19 @@ pub struct BlobMgr {
 
 /// Constructors
 impl BlobMgr {
-    /// Constructs the object given the dit root path (`.dit`)
-    pub fn from_dit_root<P: Into<PathBuf>>(dit_root: P) -> io::Result<Self> {
-        let dit_root = dit_root.into();
-        if !dit_root.is_dir() {
+    /// Constructs the object given the project path (inside which the `.dit` is located)
+    pub fn from_project<P: Into<PathBuf>>(project_path: P) -> io::Result<Self> {
+        let project_path = project_path.into();
+        if !project_path.is_dir() {
             panic!(
                 "the specified path {} is not a directory",
-                dit_root.display()
+                project_path.display()
             )
         }
         
-        let root = dit_root.join("blobs");
+        let root = project_path.join(BLOBS_ROOT);
         if !root.is_dir() {
-            std::fs::create_dir(&root)?;
+            std::fs::create_dir_all(&root)?;
         }
 
         Ok(Self {
