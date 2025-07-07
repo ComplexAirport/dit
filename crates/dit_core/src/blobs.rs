@@ -1,12 +1,13 @@
-use crate::constants::BLOBS_ROOT;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
+use crate::constants::BLOBS_ROOT;
+
 
 /// Manages the blobs in our Dit version control system
 pub struct BlobMgr {
-    /// Represents the blobs directory, `.dit/blobs`
+    /// Represents the blobs directory, [`BLOBS_ROOT`]
     root_path: PathBuf,
 }
 
@@ -33,7 +34,7 @@ impl BlobMgr {
     }
 }
 
-/// Main methods
+/// API
 impl BlobMgr {
     const BUFFER_SIZE: usize = 8192;
 

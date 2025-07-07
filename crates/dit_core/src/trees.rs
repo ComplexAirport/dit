@@ -1,12 +1,12 @@
-﻿use crate::blobs::BlobMgr;
-use crate::constants::TREES_ROOT;
-use std::path::{Path, PathBuf};
+﻿use std::path::{Path, PathBuf};
 use std::collections::BTreeMap;
 use std::io;
 use std::io::Error;
 use sha2::{Sha256, Digest};
 use serde::{Serialize, Deserialize};
 use serde_json;
+use crate::blobs::BlobMgr;
+use crate::constants::TREES_ROOT;
 
 /// This class is a tree builder, which may later be used
 /// in [`TreeMgr`] to create it
@@ -48,7 +48,7 @@ impl TreeBuilder {
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
-    /// Represents the trees directory, `.dit/trees`
+    /// Represents the trees directory, [`TREES_ROOT`]
     root_path: PathBuf,
 
     /// Represents the project directory, where the `.dit` is located
@@ -61,6 +61,7 @@ pub struct TreeMgr {
 /// Constructors
 impl TreeMgr {
     /// Constructs the object given the project path (inside which the `.dit` is located)
+    /// and a blob manager
     pub fn from<P: Into<PathBuf>>(project_path: P, blob_mgr: BlobMgr) -> io::Result<Self> {
         let project_path = project_path.into();
         if !project_path.is_dir() {
@@ -93,7 +94,7 @@ impl TreeMgr {
 
 /// API
 impl TreeMgr {
-    /// Adds a target tree and returns the tree hash
+    /// Creates a tree and returns the tree hash
     pub fn create_tree(&self, tree: &TreeBuilder) -> io::Result<String> {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree
@@ -119,7 +120,7 @@ impl TreeMgr {
         Ok(hash)
     }
 
-    /// Reads a tree from tree hash
+    /// Reads and returns a tree from the tree's hash
     pub fn get_tree(&self, tree_hash: String) -> io::Result<Tree> {
         let path = self.root_path.join(tree_hash.clone());
         let serialized = std::fs::read_to_string(path)?;
@@ -152,7 +153,6 @@ impl TreeMgr {
         }
     }
 }
-
 
 
 /// Represents the tree object
