@@ -1,9 +1,9 @@
 use crate::constants::{COMMITS_ROOT, STAGED_FILE, HEAD_FILE};
-use crate::trees::{TreeBuilder, TreeMgr};
+use crate::trees::{StagedFiles, TreeMgr};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::time::SystemTime;
 
 /// Manages the commits in our Dit version control system
@@ -71,10 +71,10 @@ impl CommitMgr {
         &self,
         author: String,
         message: String,
-        tree: TreeBuilder,
+        staged_files: StagedFiles,
         parent_commit_hash: Option<String>,
     ) -> io::Result<String> {
-        let tree_hash = self.tree_mgr.create_tree(&tree)?;
+        let tree_hash = self.tree_mgr.create_tree(&staged_files)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -114,16 +114,30 @@ impl CommitMgr {
 
 /// Manage staged files and head
 impl CommitMgr {
-    pub fn register_staged_files(&self, files: Vec<PathBuf>) -> io::Result<()> {
-        let staged_files = StagedFiles { files };
-        let serialized = serde_json::to_string(&staged_files)?;
+    pub fn register_staged_files(&self, staged_files: StagedFiles) -> io::Result<()> {
+        let serialized = serde_json::to_string_pretty(&staged_files)?;
         std::fs::write(&self.staged_file, serialized)?;
         Ok(())
+    }
+
+    pub fn read_staged_files(&self) -> io::Result<StagedFiles> {
+        let serialized = std::fs::read_to_string(&self.staged_file)?;
+        let staged_files: StagedFiles = serde_json::from_str(&serialized)?;
+        Ok(staged_files)
     }
 
     pub fn register_head(&self, hash: String) -> io::Result<()> {
         std::fs::write(&self.head_file, hash)?;
         Ok(())
+    }
+
+    pub fn read_head(&self) -> io::Result<Option<String>> {
+        let serialized = std::fs::read_to_string(&self.head_file)?;
+        if serialized.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(serialized))
+        }
     }
 }
 
@@ -131,7 +145,7 @@ impl CommitMgr {
 impl CommitMgr {
     /// Writes the commit to the commits directory
     fn write_commit(&self, commit: &Commit) -> io::Result<()> {
-        let serialized = serde_json::to_string(&commit)?;
+        let serialized = serde_json::to_string_pretty(&commit)?;
         let path = self.root_path.join(&commit.hash);
         std::fs::write(path, serialized)?;
         Ok(())
@@ -162,13 +176,4 @@ pub struct Commit {
 
     /// Represents the commit hash
     hash: String,
-}
-
-
-/// Represents a staged changes object, which
-/// records file changes which are not committed yet
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StagedFiles {
-    /// holds the relative paths of the changed objects
-    files: Vec<PathBuf>
 }

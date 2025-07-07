@@ -12,8 +12,8 @@ pub const TREES_ROOT: &str = ".dit/trees";
 pub const COMMITS_ROOT: &str = ".dit/commits";
 
 /// Represents a file where the information about staged files is stored
-pub const STAGED_FILE: &str = "dit/staged";
+pub const STAGED_FILE: &str = ".dit/staged";
 
 /// Represents a file where the information about the head commit is stored \
 /// this file contains the commit hash which usually points to the latest commit
-pub const HEAD_FILE: &str = "dit/head";
+pub const HEAD_FILE: &str = ".dit/head";

@@ -8,13 +8,14 @@ use serde_json;
 use crate::blobs::BlobMgr;
 use crate::constants::TREES_ROOT;
 
-/// This class is a tree builder, which may later be used
+/// This struct is a tree builder that represents staged files, which may later be used
 /// in [`TreeMgr`] to create it
-pub struct TreeBuilder {
-    files: Vec<PathBuf>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StagedFiles {
+    pub files: Vec<PathBuf>,
 }
 
-impl TreeBuilder {
+impl StagedFiles {
     pub fn new() -> Self {
         Self {
             files: Vec::new(),
@@ -28,7 +29,7 @@ impl TreeBuilder {
     }
 }
 
-impl TreeBuilder {
+impl StagedFiles {
     /// Add a file to the tree builder given its path. \
     /// This method does not create any blobs or calculate hashes
     pub fn add_file<P: Into<PathBuf>>(&mut self, path: P) -> io::Result<()> {
@@ -42,6 +43,13 @@ impl TreeBuilder {
         self.files.push(path);
 
         Ok(())
+    }
+
+    pub fn remove_file<P: Into<PathBuf>>(&mut self, path: P) {
+        let path = path.into();
+        if let Some(pos) = self.files.iter().position(|p| *p == path) {
+            self.files.remove(pos);
+        }
     }
 }
 
@@ -95,7 +103,7 @@ impl TreeMgr {
 /// API
 impl TreeMgr {
     /// Creates a tree and returns the tree hash
-    pub fn create_tree(&self, tree: &TreeBuilder) -> io::Result<String> {
+    pub fn create_tree(&self, tree: &StagedFiles) -> io::Result<String> {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree
         // hash being dependent on traversal order
