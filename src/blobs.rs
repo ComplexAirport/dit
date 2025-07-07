@@ -60,12 +60,10 @@ impl BlobMgr {
         Ok(hash)
     }
 
-    /// Returns the blob content based on it's hash
-    pub fn get_content<S: Into<String>>(&self, hash: S) -> io::Result<Vec<u8>> {
+    /// Returns the blob content reader based on it's hash
+    pub fn get_reader<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
         let path = self.root.join(hash.into());
-        let mut file = BufReader::new(File::open(path)?);
-        let mut content = Vec::new();
-        file.read_to_end(&mut content)?;
-        Ok(content)
+        let reader = BufReader::new(File::open(path)?);
+        Ok(reader)
     }
 }
