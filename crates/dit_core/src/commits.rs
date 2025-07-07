@@ -122,7 +122,12 @@ impl CommitMgr {
 
     pub fn read_staged_files(&self) -> io::Result<StagedFiles> {
         let serialized = std::fs::read_to_string(&self.staged_file)?;
-        let staged_files: StagedFiles = serde_json::from_str(&serialized)?;
+        let staged_files = if serialized.is_empty() {
+            StagedFiles::new()
+        } else {
+            serde_json::from_str(&serialized)?
+        };
+
         Ok(staged_files)
     }
 
@@ -175,5 +180,6 @@ pub struct Commit {
     parent: Option<String>,
 
     /// Represents the commit hash
+    #[serde(skip)]
     hash: String,
 }

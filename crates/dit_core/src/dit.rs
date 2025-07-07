@@ -17,6 +17,9 @@ pub struct Dit {
 
     /// Tree builder for staging changes
     staged_files: StagedFiles,
+
+    /// Head hash
+    head: Option<String>,
 }
 
 
@@ -33,13 +36,15 @@ impl Dit {
         }
 
         let commit_mgr = CommitMgr::from_project(&project_path)?;
-        let staged_files = StagedFiles::new();
+        let staged_files = commit_mgr.read_staged_files()?;
+        let head = commit_mgr.read_head()?;
 
         Ok(Self{
             project_path,
             root,
             commit_mgr,
-            staged_files
+            staged_files,
+            head
         })
     }
 }
@@ -57,7 +62,17 @@ impl Dit {
         let author = author.into();
         let message = message.into();
         let parent_commit_hash = self.commit_mgr.read_head()?;
-        self.commit_mgr.create_commit(author, message, self.staged_files.clone(), parent_commit_hash)?;
+        let commit_hash = self.commit_mgr.create_commit(
+            author, message, self.staged_files.clone(), parent_commit_hash)?;
+
+        // change the head
+        self.head = Some(commit_hash.clone());
+        self.commit_mgr.register_head(commit_hash)?;
+
+        // remove the staged files
+        self.staged_files = StagedFiles::new();
+        self.commit_mgr.register_staged_files(self.staged_files.clone())?;
+
         Ok(())
     }
 }

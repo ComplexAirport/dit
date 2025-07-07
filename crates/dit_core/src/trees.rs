@@ -143,7 +143,9 @@ impl TreeMgr {
     fn write_tree(&self, tree: &Tree) -> io::Result<()> {
         let serialized = serde_json::to_string_pretty(&tree)?;
         let path = self.root_path.join(tree.hash.clone());
-        std::fs::write(path, serialized)?;
+        if !path.is_file() {
+            std::fs::write(path, serialized)?;
+        }
         Ok(())
     }
 
@@ -170,5 +172,6 @@ pub struct Tree {
     pub files: BTreeMap<PathBuf, String>,
 
     /// Represents the tree hash
+    #[serde(skip)]
     pub hash: String,
 }
