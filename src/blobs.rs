@@ -41,7 +41,8 @@ impl BlobMgr {
         let path = path.into();
 
         let mut reader = BufReader::new(File::open(path)?);
-        let mut temp_file = BufWriter::new(File::create(self.root.join(".temp"))?);
+        let temp_file_path = self.root.join(".temp");
+        let mut temp_file = BufWriter::new(File::create(&temp_file_path)?);
         let mut hasher = Sha256::new();
 
         let mut buffer = [0; Self::BUFFER_SIZE];
@@ -56,7 +57,15 @@ impl BlobMgr {
         
         let hash = format!("{:x}", hasher.finalize());
         let target_file = self.root.join(&hash);
-        std::fs::rename(self.root.join(".temp"), target_file)?;
+
+        if target_file.is_file() {
+            // if the blob already exists, we just remove the newly created temp file
+            std::fs::remove_file(&temp_file_path)?;
+        } else {
+            // if it does not exist, we create it by renaming the newly created temp file
+            std::fs::rename(&temp_file_path, target_file)?;
+        }
+
         Ok(hash)
     }
 
