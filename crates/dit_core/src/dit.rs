@@ -2,7 +2,6 @@
 use std::io;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
-use crate::blobs::BlobMgr;
 use crate::commits::CommitMgr;
 use crate::constants::{DIT_ROOT, STAGED_ROOT, STAGED_FILE, HEAD_FILE};
 use crate::trees::{StagedFiles};
@@ -140,8 +139,14 @@ impl Dit {
     }
 
     pub fn unstage_file<P: Into<PathBuf>>(&mut self, file_path: P) -> io::Result<()> {
-        self.staged_files.remove_file(file_path);
+        let file_path = file_path.into();
+
+        self.staged_files.remove_file(&file_path);
+
+        std::fs::remove_file(&file_path)?;
+
         Self::store_staged_files(&self.staged_root, self.staged_files.clone())?;
+
         Ok(())
     }
 }
