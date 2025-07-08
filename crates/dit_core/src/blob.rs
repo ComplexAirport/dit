@@ -25,27 +25,25 @@
 //! This file can later be reused for the same file if the contents don't change
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
+use crate::constants::BUFFER_SIZE;
+use crate::dit_project::DitProject;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::rc::Rc;
-use crate::dit_project::DitProject;
-use crate::constants::BUFFER_SIZE;
 
 /// Manages the blobs in our Dit version control system \
 /// (see [`crate::blob`] for more detailed info)
 pub struct BlobMgr {
     /// Represents the blobs directory, [`BLOBS_ROOT`]
-    project: Rc<DitProject>
+    project: Rc<DitProject>,
 }
 
 /// Constructors
 impl BlobMgr {
     pub fn from(project: Rc<DitProject>) -> Self {
-        Self {
-            project
-        }
+        Self { project }
     }
 }
 
@@ -73,7 +71,7 @@ impl BlobMgr {
             hasher.update(&buffer[..n]);
             temp_file.write_all(&buffer[..n])?;
         }
-        
+
         let hash = format!("{:x}", hasher.finalize());
         let target_file = self.project.blobs().join(&hash);
 

@@ -27,16 +27,15 @@
 //! }
 //! ```
 
-use std::path::PathBuf;
-use std::collections::BTreeMap;
-use std::io;
-use std::rc::Rc;
-use sha2::{Sha256, Digest};
-use serde::{Serialize, Deserialize};
-use serde_json;
 use crate::blob::BlobMgr;
 use crate::dit_project::DitProject;
 use crate::stage::StagedFiles;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
+use std::io;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
@@ -50,10 +49,7 @@ pub struct TreeMgr {
 impl TreeMgr {
     pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
         let blob_mgr = BlobMgr::from(project.clone());
-        Ok(Self {
-            project,
-            blob_mgr
-        })
+        Ok(Self { project, blob_mgr })
     }
 }
 
@@ -78,7 +74,10 @@ impl TreeMgr {
         }
         let hash = format!("{:x}", hasher.finalize());
 
-        let tree = Tree { files, hash: hash.clone() };
+        let tree = Tree {
+            files,
+            hash: hash.clone(),
+        };
         self.write_tree(&tree)?;
 
         Ok(hash)
@@ -105,7 +104,6 @@ impl TreeMgr {
         Ok(())
     }
 }
-
 
 /// Represents the tree object
 #[derive(Debug, Clone, Serialize, Deserialize)]

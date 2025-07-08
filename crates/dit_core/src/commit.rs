@@ -1,11 +1,18 @@
+//! This module manages the commits in the Dit version control system
+//!
+//! A commit is a snapshot of a project's files at a given point in time,
+//! along with metadata describing the relative to the last commit.
+//! The metadata includes the author who wrote the changes, the parent
+//! commit, the commit message, etc.
+
+use crate::dit_project::DitProject;
+use crate::stage::StagedFiles;
 use crate::tree::TreeMgr;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::io;
 use std::rc::Rc;
 use std::time::SystemTime;
-use crate::dit_project::DitProject;
-use crate::stage::StagedFiles;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
@@ -19,10 +26,7 @@ pub struct CommitMgr {
 impl CommitMgr {
     pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
         let tree_mgr = TreeMgr::from(project.clone())?;
-        Ok(Self {
-            project,
-            tree_mgr,
-        })
+        Ok(Self { project, tree_mgr })
     }
 }
 
@@ -85,8 +89,7 @@ impl CommitMgr {
     }
 }
 
-
-/// Represents the commit object
+/// Represents a commit object
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Commit {
     /// Represents the committer name and email address \

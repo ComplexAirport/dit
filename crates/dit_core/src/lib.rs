@@ -1,7 +1,8 @@
-pub mod blob;
-pub mod tree;
-pub mod constants;
-pub mod stage;
-pub mod commit;
-pub mod dit;
+mod blob;
+mod commit;
+mod constants;
 mod dit_project;
+mod stage;
+mod tree;
+
+pub mod dit;

@@ -1,7 +1,7 @@
-﻿use std::path::{Path, PathBuf};
+﻿use crate::constants::*;
 use std::io;
 use std::io::Error;
-use crate::constants::*;
+use std::path::{Path, PathBuf};
 
 /// Stores paths of the components of the dit project
 pub struct DitProject {
@@ -41,7 +41,7 @@ impl DitProject {
                 format!(
                     "given project path '{}' is not a directory",
                     project_path.display()
-                )
+                ),
             ));
         }
 
@@ -98,28 +98,44 @@ impl DitProject {
 /// Getters
 impl DitProject {
     /// Returns the project path where the `.dit` is located
-    pub fn project_path(&self) -> &Path { &self.project_path }
+    pub fn project_path(&self) -> &Path {
+        &self.project_path
+    }
 
     /// Returns the [`DIT_ROOT`] path
-    pub fn dit(&self) -> &Path { &self.dit }
+    pub fn dit(&self) -> &Path {
+        &self.dit
+    }
 
     /// Returns the [`BLOBS_ROOT`] path
-    pub fn blobs(&self) -> &Path { &self.blobs }
+    pub fn blobs(&self) -> &Path {
+        &self.blobs
+    }
 
     /// Returns the [`TREES_ROOT`] path
-    pub fn trees(&self) -> &Path { &self.trees }
+    pub fn trees(&self) -> &Path {
+        &self.trees
+    }
 
     /// Returns the [`STAGE_ROOT`] path
-    pub fn stage(&self) -> &Path { &self.stage }
+    pub fn stage(&self) -> &Path {
+        &self.stage
+    }
 
     /// Returns the [`STAGE_FILE`] path
-    pub fn stage_file(&self) -> &Path { &self.stage_file }
+    pub fn stage_file(&self) -> &Path {
+        &self.stage_file
+    }
 
     /// Returns the [`COMMITS_ROOT`] path
-    pub fn commits(&self) -> &Path { &self.commits }
+    pub fn commits(&self) -> &Path {
+        &self.commits
+    }
 
     /// Returns the [`HEAD_FILE`] path
-    pub fn head_file(&self) -> &Path { &self.head_file }
+    pub fn head_file(&self) -> &Path {
+        &self.head_file
+    }
 
     /// Returns the path of a given path relative to the project path. \
     /// For example, if the project path is `D:\Projects\project1\` and the given path is
@@ -130,12 +146,14 @@ impl DitProject {
             Ok(path
                 .strip_prefix(self.project_path())
                 .unwrap()
-                .to_path_buf()
-            )
+                .to_path_buf())
         } else {
             Err(Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("the path '{}' is not a inside the dit project", path.display())
+                format!(
+                    "the path '{}' is not a inside the dit project",
+                    path.display()
+                ),
             ))
         }
     }

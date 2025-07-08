@@ -1,4 +1,6 @@
-﻿use crate::commit::CommitMgr;
+﻿//! This module provides the API to work with the Dit version control system
+
+use crate::commit::CommitMgr;
 use crate::dit_project::DitProject;
 use crate::stage::StageMgr;
 use std::path::Path;
@@ -24,9 +26,7 @@ impl Dit {
     /// Constructs the object given the project path (inside which the `.dit` is located) \
     /// Creates commit, tree and blob managers
     pub fn from<P: AsRef<Path>>(project_path: P) -> io::Result<Self> {
-        let project = Rc::new(
-            DitProject::init(project_path)?
-        );
+        let project = Rc::new(DitProject::init(project_path)?);
         let commit_mgr = CommitMgr::from(project.clone())?;
         let stage_mgr = StageMgr::from(project.clone())?;
 
@@ -34,7 +34,7 @@ impl Dit {
             project,
             commit_mgr,
             stage_mgr,
-            head: None
+            head: None,
         };
 
         Self::load_head(&mut dit)?;
@@ -46,12 +46,10 @@ impl Dit {
 /// Dit API
 impl Dit {
     /// Commits the changes given the commit author and the message
-    pub fn commit<S1, S2>(
-        &mut self,
-        author: S1,
-        message: S2,
-    ) -> io::Result<()>
-    where S1: Into<String>, S2: Into<String>
+    pub fn commit<S1, S2>(&mut self, author: S1, message: S2) -> io::Result<()>
+    where
+        S1: Into<String>,
+        S2: Into<String>,
     {
         self.load_head()?; // load the head to access parent hash
 
@@ -59,9 +57,9 @@ impl Dit {
         let message = message.into();
         let staged_files = self.stage_mgr.staged_files();
 
-        let commit_hash = self.commit_mgr.create_commit(
-            author, message, staged_files, self.head.clone(),
-        )?;
+        let commit_hash =
+            self.commit_mgr
+                .create_commit(author, message, staged_files, self.head.clone())?;
 
         self.head = Some(commit_hash);
         self.update_head()?;
