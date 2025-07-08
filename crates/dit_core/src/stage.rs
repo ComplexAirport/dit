@@ -87,9 +87,11 @@ impl StageMgr {
         let file_path = file_path.as_ref();
         let relative_path = self.project.get_relative_path(file_path)?;
 
-        self.staged_files.files.remove(&relative_path);
+        let staged_path = self.staged_files.files.remove(&relative_path);
 
-        std::fs::remove_file(file_path)?;
+        if let Some(staged_path) = staged_path {
+            std::fs::remove_file(staged_path)?;
+        }
 
         self.update_stage_file()?;
 

@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "dit")]
 #[command(version = "1.0")]
-#[command(about = "Minimal version control system")]
+#[command(about = "Dit - a minimal version control system similar to Git")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: CommandKind,
@@ -12,6 +12,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum CommandKind {
+    Init,
+
     Add {
         file: PathBuf,
     },
