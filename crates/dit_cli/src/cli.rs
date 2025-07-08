@@ -19,12 +19,14 @@ pub enum CommandKind {
         count: usize
     },
 
+    Status,
+
     Add {
-        file: PathBuf,
+        files: Vec<PathBuf>,
     },
 
     Unstage {
-        file: PathBuf,
+        files: Vec<PathBuf>,
     },
 
     Commit {

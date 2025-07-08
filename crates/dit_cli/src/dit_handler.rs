@@ -26,8 +26,9 @@ impl DitHandler {
         match command {
             CommandKind::Init => self.handle_init(),
             CommandKind::History { count } => self.handle_history(count),
-            CommandKind::Add { file } => self.handle_add(file),
-            CommandKind::Unstage { file } => self.handle_unstage(file),
+            CommandKind::Status => self.handle_status(),
+            CommandKind::Add { files } => self.handle_add(files),
+            CommandKind::Unstage { files } => self.handle_unstage(files),
             CommandKind::Commit { author, message } => self.handle_commit(author, message),
         }
     }
@@ -69,17 +70,38 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_add(&mut self, file: PathBuf) -> io::Result<()> {
-        let abs_path = resolve_absolute_path(&file)?;
-        self.get_dit().stage(&abs_path)?;
-        println!("[+] Added '{}' to the staged files", file.display());
+    pub fn handle_status(&mut self) -> io::Result<()> {
+        // todo: this needs to be changed
+        // also need to display files which are not tracked
+        // and also the files which were changed compared to the last commit
+        // or last time being staged
+
+        let dit = self.get_dit();
+        let staged_files = dit.staged_files()?;
+
+        println!("staged: ");
+        for path in staged_files.files.keys() {
+            println!("       {}", path.display());
+        }
+
         Ok(())
     }
 
-    pub fn handle_unstage(&mut self, file: PathBuf) -> io::Result<()> {
-        let abs_path = resolve_absolute_path(&file)?;
-        self.get_dit().unstage(&abs_path)?;
-        println!("[+] Unstaged the file `{}`", file.display());
+    pub fn handle_add(&mut self, files: Vec<PathBuf>) -> io::Result<()> {
+        for file in files {
+            let abs_path = resolve_absolute_path(&file)?;
+            self.get_dit().stage(&abs_path)?;
+            println!("[+] Added '{}' to the staged files", file.display());
+        }
+        Ok(())
+    }
+
+    pub fn handle_unstage(&mut self, files: Vec<PathBuf>) -> io::Result<()> {
+        for file in files {
+            let abs_path = resolve_absolute_path(&file)?;
+            self.get_dit().unstage(&abs_path)?;
+            println!("[+] Unstaged the file `{}`", file.display());
+        }
         Ok(())
     }
 

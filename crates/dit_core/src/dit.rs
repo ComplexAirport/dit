@@ -2,7 +2,7 @@
 
 use crate::commit::{Commit, CommitMgr};
 use crate::dit_project::DitProject;
-use crate::stage::StageMgr;
+use crate::stage::{StageMgr, StagedFiles};
 use std::path::Path;
 use std::rc::Rc;
 use std::{fs, io};
@@ -100,6 +100,12 @@ impl Dit {
         }
 
         Ok(commits)
+    }
+
+    /// Returns staged files
+    pub fn staged_files(&mut self) -> io::Result<&StagedFiles> {
+        let files = self.stage_mgr.staged_files();
+        Ok(files)
     }
 }
 
