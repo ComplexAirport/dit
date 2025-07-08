@@ -95,8 +95,6 @@ impl Dit {
         // change the head
         self.head = Some(commit_hash.clone());
         Self::store_head(&self.head_file, commit_hash)?;
-
-        // remove the staged files
         for file in &self.staged_files.files {
             std::fs::remove_file(file)?;
         }
@@ -145,7 +143,7 @@ impl Dit {
 
         std::fs::remove_file(&file_path)?;
 
-        Self::store_staged_files(&self.staged_root, self.staged_files.clone())?;
+        Self::store_staged_files(&self.staged_file, self.staged_files.clone())?;
 
         Ok(())
     }
