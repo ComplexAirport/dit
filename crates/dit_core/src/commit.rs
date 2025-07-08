@@ -75,6 +75,12 @@ impl CommitMgr {
 
         Ok(commit_hash)
     }
+
+
+    /// Returns a commit by hash
+    pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
+        self.load_commit(hash)
+    }
 }
 
 /// Private helper methods
@@ -92,13 +98,9 @@ impl CommitMgr {
         let hash = hash.as_ref();
         let path = self.project.commits().join(hash);
         let serialized = std::fs::read_to_string(path)?;
-        let commit: Commit = serde_json::from_str(&serialized)?;
+        let mut commit: Commit = serde_json::from_str(&serialized)?;
+        commit.hash = hash.to_string();
         Ok(commit)
-    }
-    
-    /// Returns a commit by hash
-    fn get_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
-        self.load_commit(hash)
     }
 }
 

@@ -25,6 +25,7 @@ impl DitHandler {
     pub fn handle(&mut self, command: CommandKind) -> io::Result<()> {
         match command {
             CommandKind::Init => self.handle_init(),
+            CommandKind::History { count } => self.handle_history(count),
             CommandKind::Add { file } => self.handle_add(file),
             CommandKind::Unstage { file } => self.handle_unstage(file),
             CommandKind::Commit { author, message } => self.handle_commit(author, message),
@@ -51,6 +52,20 @@ impl DitHandler {
         let dit = Dit::from(&cwd)?;
         self.dit = Some(dit);
         println!("[+] Initialized a new dit project.");
+        Ok(())
+    }
+
+    pub fn handle_history(&mut self, count: usize) -> io::Result<()> {
+        let dit = self.get_dit();
+
+        let commits = dit.history(count)?;
+
+        for (idx, commit) in commits.iter().enumerate() {
+            let hash_slice = &commit.hash[0..8];
+            println!("  {}. {hash_slice}..", idx + 1);
+            println!("{} - {}", commit.author, commit.message);
+        }
+
         Ok(())
     }
 

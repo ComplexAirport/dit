@@ -1,6 +1,6 @@
 ﻿//! This module provides the API to work with the Dit version control system
 
-use crate::commit::CommitMgr;
+use crate::commit::{Commit, CommitMgr};
 use crate::dit_project::DitProject;
 use crate::stage::StageMgr;
 use std::path::Path;
@@ -78,6 +78,28 @@ impl Dit {
     /// Unstages the file given the file path
     pub fn unstage<P: AsRef<Path>>(&mut self, path: P) -> io::Result<()> {
         self.stage_mgr.unstage_file(path)
+    }
+
+    /// Returns the commit history
+    pub fn history(&mut self, mut count: usize) -> io::Result<Vec<Commit>> {
+        self.update_head()?;
+        let mut commits = Vec::new();
+
+        let mut head_hash = self.head.clone();
+
+        while let Some(head) = &head_hash {
+            if count == 0 {
+                break;
+            }
+
+            let commit = self.commit_mgr.get_commit(head)?;
+            head_hash = commit.parent.clone();
+            commits.push(commit);
+
+            count -= 1;
+        }
+
+        Ok(commits)
     }
 }
 

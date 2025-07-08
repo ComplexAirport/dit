@@ -14,6 +14,11 @@ pub struct Cli {
 pub enum CommandKind {
     Init,
 
+    History {
+        #[arg(short, long, default_value = "5")]
+        count: usize
+    },
+
     Add {
         file: PathBuf,
     },
