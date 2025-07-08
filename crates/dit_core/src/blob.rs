@@ -29,40 +29,23 @@ use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
-use crate::constants::BLOBS_ROOT;
-
+use std::rc::Rc;
+use crate::dit_project::DitProject;
+use crate::constants::BUFFER_SIZE;
 
 /// Manages the blobs in our Dit version control system \
 /// (see [`crate::blob`] for more detailed info)
 pub struct BlobMgr {
     /// Represents the blobs directory, [`BLOBS_ROOT`]
-    path: PathBuf,
+    project: Rc<DitProject>
 }
 
 /// Constructors
 impl BlobMgr {
-    /// Represents the maximum size of the buffer when reading/writing/hashing files \
-    /// Larger value means more bytes loaded into the RAM during I/O
-    const BUFFER_SIZE: usize = 8192;
-
-    /// Constructs the object given the project path (inside which the `.dit` is located)
-    pub fn from_project<P: Into<PathBuf>>(project_path: P) -> io::Result<Self> {
-        let project_path = project_path.into();
-        if !project_path.is_dir() {
-            panic!(
-                "the specified path {} is not a directory",
-                project_path.display()
-            )
+    pub fn from(project: Rc<DitProject>) -> Self {
+        Self {
+            project
         }
-        
-        let root = project_path.join(BLOBS_ROOT);
-        if !root.is_dir() {
-            std::fs::create_dir_all(&root)?;
-        }
-
-        Ok(Self {
-            path: root,
-        })
     }
 }
 
@@ -78,10 +61,10 @@ impl BlobMgr {
         // write it to a temporary file. When the final hash is calculated,
         // this temporary file will be renamed to that hash, creating the blob.
         let mut reader = BufReader::new(File::open(path)?);
-        let temp_file_path = self.path.join(".temp");
+        let temp_file_path = self.project.blobs().join(".temp");
         let mut temp_file = BufWriter::new(File::create(&temp_file_path)?);
         let mut hasher = Sha256::new();
-        let mut buffer = [0; Self::BUFFER_SIZE];
+        let mut buffer = [0; BUFFER_SIZE];
         loop {
             let n = reader.read(&mut buffer)?;
             if n == 0 {
@@ -92,7 +75,7 @@ impl BlobMgr {
         }
         
         let hash = format!("{:x}", hasher.finalize());
-        let target_file = self.path.join(&hash);
+        let target_file = self.project.blobs().join(&hash);
 
         if target_file.is_file() {
             // if the blob already exists, we just remove the newly created temp file
@@ -107,7 +90,7 @@ impl BlobMgr {
 
     /// Returns the blob content reader based on it's hash
     pub fn get_blob<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
-        let path = self.path.join(hash.into());
+        let path = self.project.blobs().join(hash.into());
         let reader = BufReader::new(File::open(path)?);
         Ok(reader)
     }

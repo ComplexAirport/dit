@@ -1,18 +1,15 @@
-use crate::constants::{COMMITS_ROOT, HEAD_FILE};
-use crate::tree::{StagedFiles, TreeMgr};
+use crate::tree::TreeMgr;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::io;
-use std::path::{PathBuf};
+use std::rc::Rc;
 use std::time::SystemTime;
+use crate::dit_project::DitProject;
+use crate::stage::StagedFiles;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
-    /// Represents the commits directory, [`COMMITS_ROOT`]
-    root_path: PathBuf,
-
-    /// Represents the head file, [`HEAD_FILE`]
-    head_file: PathBuf,
+    project: Rc<DitProject>,
 
     /// Represents the tree manager [`TreeMgr`]
     tree_mgr: TreeMgr,
@@ -20,39 +17,12 @@ pub struct CommitMgr {
 
 /// Constructors
 impl CommitMgr {
-    /// Constructs the object given the project path (inside which the `.dit` is located)
-    /// and a tree manager
-    pub fn from<P: Into<PathBuf>>(project_path: P, tree_mgr: TreeMgr) -> io::Result<Self> {
-        let project_path = project_path.into();
-        if !project_path.is_dir() {
-            panic!(
-                "the specified path {} is not a directory",
-                project_path.display()
-            )
-        }
-
-        let root = project_path.join(COMMITS_ROOT);
-        let head_file = project_path.join(HEAD_FILE);
-        if !root.is_dir() {
-            std::fs::create_dir_all(&root)?;
-        }
-        if !head_file.exists() {
-            std::fs::write(&head_file, "")?;
-        }
-
+    pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
+        let tree_mgr = TreeMgr::from(project.clone())?;
         Ok(Self {
-            root_path: root,
-            head_file,
+            project,
             tree_mgr,
         })
-    }
-
-    /// Constructs the object given the project path (inside which the `.dit` is located) \
-    /// Creates a tree and blob managers
-    pub fn from_project<P: Into<PathBuf>>(project_path: P) -> io::Result<Self> {
-        let project_path = project_path.into();
-        let tree_mgr = TreeMgr::from_project(&project_path)?;
-        Self::from(project_path, tree_mgr)
     }
 }
 
@@ -63,10 +33,10 @@ impl CommitMgr {
         &self,
         author: String,
         message: String,
-        staged_files: StagedFiles,
+        staged_files: &StagedFiles,
         parent_commit_hash: Option<String>,
     ) -> io::Result<String> {
-        let tree_hash = self.tree_mgr.create_tree(&staged_files)?;
+        let tree_hash = self.tree_mgr.create_tree(staged_files)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -94,25 +64,24 @@ impl CommitMgr {
 
         Ok(commit_hash)
     }
-
-    /// Reads and returns a commit from the commit's hash
-    fn get_commit(&self, hash: &str) -> io::Result<Commit> {
-        let path = self.root_path.join(hash);
-        let serialized = std::fs::read_to_string(path)?;
-        let commit: Commit = serde_json::from_str(&serialized)?;
-        Ok(commit)
-    }
 }
-
 
 /// Private helper methods
 impl CommitMgr {
-    /// Writes the commit to the commits directory
+    /// Writes the given commit to the commits directory
     fn write_commit(&self, commit: &Commit) -> io::Result<()> {
         let serialized = serde_json::to_string_pretty(&commit)?;
-        let path = self.root_path.join(&commit.hash);
+        let path = self.project.commits().join(&commit.hash);
         std::fs::write(path, serialized)?;
         Ok(())
+    }
+
+    /// Reads and returns a commit given the commit's hash
+    fn load_commit(&self, hash: &str) -> io::Result<Commit> {
+        let path = self.project.commits().join(hash);
+        let serialized = std::fs::read_to_string(path)?;
+        let commit: Commit = serde_json::from_str(&serialized)?;
+        Ok(commit)
     }
 }
 

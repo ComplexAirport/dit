@@ -4,3 +4,4 @@ pub mod constants;
 pub mod stage;
 pub mod commit;
 pub mod dit;
+mod dit_project;

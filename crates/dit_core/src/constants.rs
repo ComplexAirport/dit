@@ -1,4 +1,9 @@
-﻿/// Represents the root dit directory, where all dit-related data
+﻿/// Represents the maximum size of the buffer when reading/writing/hashing files \
+/// Larger value means more bytes loaded into the RAM during I/O
+/// todo: load from environmental variable
+pub const BUFFER_SIZE: usize = 32768;
+
+/// Represents the root dit directory, where all dit-related data
 /// (blobs, trees, commits, etc.) is stored
 pub const DIT_ROOT: &str = ".dit";
 
@@ -12,10 +17,10 @@ pub const TREES_ROOT: &str = ".dit/trees";
 pub const COMMITS_ROOT: &str = ".dit/commits";
 
 /// Represents a directory where the staged files are stored temporarily
-pub const STAGED_ROOT: &str = ".dit/staged";
+pub const STAGE_ROOT: &str = ".dit/stage";
 
 /// Represents a file where information about the staged files is stored
-pub const STAGED_FILE: &str = ".dit/staged/staged";
+pub const STAGE_FILE: &str = ".dit/stage/staged_files";
 
 /// Represents a file where the information about the head commit is stored \
 /// this file contains the commit hash which usually points to the latest commit
