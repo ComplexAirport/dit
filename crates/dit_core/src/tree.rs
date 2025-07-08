@@ -56,11 +56,16 @@ impl TreeMgr {
 /// API
 impl TreeMgr {
     /// Creates a tree and returns the tree hash
-    pub fn create_tree(&self, staged_files: &StagedFiles) -> io::Result<String> {
+    pub fn create_tree(&self, staged_files: &StagedFiles, parent_tree_hash: Option<String>) -> io::Result<String> {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree
         // hash being dependent on traversal order
-        let mut files: BTreeMap<PathBuf, String> = BTreeMap::new();
+
+        let mut files: BTreeMap<PathBuf, String> = if let Some(parent_tree) = parent_tree_hash {
+            self.get_tree(parent_tree)?.files
+        } else {
+            BTreeMap::new()
+        };
 
         for (relative_path, staged_path) in &staged_files.files {
             let blob_hash = self.blob_mgr.create_blob(staged_path)?;
@@ -82,14 +87,6 @@ impl TreeMgr {
 
         Ok(hash)
     }
-
-    /// Reads and returns a tree from the tree's hash
-    pub fn get_tree(&self, tree_hash: String) -> io::Result<Tree> {
-        let path = self.project.trees().join(tree_hash.clone());
-        let serialized = std::fs::read_to_string(path)?;
-        let tree: Tree = serde_json::from_str(&serialized)?;
-        Ok(tree)
-    }
 }
 
 /// Private helper methods
@@ -102,6 +99,14 @@ impl TreeMgr {
             std::fs::write(path, serialized)?;
         }
         Ok(())
+    }
+
+    /// Reads and returns a tree from the tree's hash
+    fn get_tree(&self, tree_hash: String) -> io::Result<Tree> {
+        let path = self.project.trees().join(tree_hash.clone());
+        let serialized = std::fs::read_to_string(path)?;
+        let tree: Tree = serde_json::from_str(&serialized)?;
+        Ok(tree)
     }
 }
 

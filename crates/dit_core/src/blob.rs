@@ -87,7 +87,7 @@ impl BlobMgr {
     }
 
     /// Returns the blob content reader based on it's hash
-    pub fn get_blob<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
+    pub fn get_blob_reader<S: Into<String>>(&self, hash: S) -> io::Result<BufReader<File>> {
         let path = self.project.blobs().join(hash.into());
         let reader = BufReader::new(File::open(path)?);
         Ok(reader)

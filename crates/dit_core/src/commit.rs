@@ -40,7 +40,14 @@ impl CommitMgr {
         staged_files: &StagedFiles,
         parent_commit_hash: Option<String>,
     ) -> io::Result<String> {
-        let tree_hash = self.tree_mgr.create_tree(staged_files)?;
+        let parent_tree_hash = if let Some(parent_commit_hash) = &parent_commit_hash {
+            let parent_commit = self.get_commit(parent_commit_hash)?;
+            Some(parent_commit.tree)
+        } else {
+            None
+        };
+
+        let tree_hash = self.tree_mgr.create_tree(staged_files, parent_tree_hash)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -81,11 +88,17 @@ impl CommitMgr {
     }
 
     /// Reads and returns a commit given the commit's hash
-    fn load_commit(&self, hash: &str) -> io::Result<Commit> {
+    fn load_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
+        let hash = hash.as_ref();
         let path = self.project.commits().join(hash);
         let serialized = std::fs::read_to_string(path)?;
         let commit: Commit = serde_json::from_str(&serialized)?;
         Ok(commit)
+    }
+    
+    /// Returns a commit by hash
+    fn get_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
+        self.load_commit(hash)
     }
 }
 
@@ -94,23 +107,23 @@ impl CommitMgr {
 pub struct Commit {
     /// Represents the committer name and email address \
     /// Example: "Alice | alice@example.com"
-    author: String,
+    pub author: String,
 
     /// Represents the commit message \
     /// Example: "initial commit"
-    message: String,
+    pub message: String,
 
     /// Represents the commit time as a Unix timestamp - number of seconds
     /// since January 1, 1970 (UTC)
-    timestamp: u64,
+    pub timestamp: u64,
 
     /// Represents the tree hash of this commit
-    tree: String,
+    pub tree: String,
 
     /// Represents the hash of the parent commit (the hash of the commit which preceded this commit)
-    parent: Option<String>,
+    pub parent: Option<String>,
 
     /// Represents the commit hash
     #[serde(skip)]
-    hash: String,
+    pub hash: String,
 }

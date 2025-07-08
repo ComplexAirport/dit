@@ -57,9 +57,9 @@ impl Dit {
         let message = message.into();
         let staged_files = self.stage_mgr.staged_files();
 
-        let commit_hash =
-            self.commit_mgr
-                .create_commit(author, message, staged_files, self.head.clone())?;
+        let commit_hash = self.commit_mgr.create_commit(
+            author, message, staged_files, self.head.clone()
+        )?;
 
         self.head = Some(commit_hash);
         self.update_head()?;

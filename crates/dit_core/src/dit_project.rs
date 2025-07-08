@@ -161,6 +161,9 @@ impl DitProject {
     /// Checks whether a given path is inside the project
     pub fn includes_path<P: AsRef<Path>>(&self, path: P) -> bool {
         let path = path.as_ref();
+        if !path.exists() {
+            return false;
+        }
         let abs_project_path = self.project_path.canonicalize().unwrap();
         let abs_path = path.canonicalize().unwrap();
         abs_path.starts_with(abs_project_path)
