@@ -1,5 +1,5 @@
 use crate::constants::{COMMITS_ROOT, HEAD_FILE};
-use crate::trees::{StagedFiles, TreeMgr};
+use crate::tree::{StagedFiles, TreeMgr};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::io;

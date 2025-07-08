@@ -2,9 +2,9 @@
 use std::io;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
-use crate::commits::CommitMgr;
+use crate::commit::CommitMgr;
 use crate::constants::{DIT_ROOT, STAGED_ROOT, STAGED_FILE, HEAD_FILE};
-use crate::trees::{StagedFiles};
+use crate::tree::{StagedFiles};
 
 /// Main API for working with the Dit version control system
 pub struct Dit {

@@ -1,5 +1,6 @@
-pub mod blobs;
-pub mod trees;
+pub mod blob;
+pub mod tree;
 pub mod constants;
-pub mod commits;
+pub mod stage;
+pub mod commit;
 pub mod dit;
