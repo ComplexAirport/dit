@@ -1,5 +1,5 @@
 ﻿use crate::constants::*;
-use std::io;
+use std::{fs, io};
 use std::io::Error;
 use std::path::{Path, PathBuf};
 
@@ -36,7 +36,7 @@ impl DitProject {
     pub fn init<P: AsRef<Path>>(project_path: P) -> io::Result<Self> {
         let project_path = project_path.as_ref().to_path_buf();
         if !project_path.is_dir() {
-            return Err(io::Error::new(
+            return Err(Error::new(
                 io::ErrorKind::NotADirectory,
                 format!(
                     "given project path '{}' is not a directory",
@@ -80,7 +80,7 @@ impl DitProject {
     }
     fn init_sub_dir(path: &Path) -> io::Result<()> {
         if !path.is_dir() {
-            std::fs::create_dir_all(path)?;
+            fs::create_dir_all(path)?;
         }
         Ok(())
     }
@@ -89,7 +89,7 @@ impl DitProject {
         if !path.is_file() {
             // this should not fail because subdirectories are created
             // before creating the files
-            std::fs::File::create(path)?;
+            fs::File::create(path)?;
         }
         Ok(())
     }
@@ -164,8 +164,35 @@ impl DitProject {
         if !path.exists() {
             return false;
         }
-        let abs_project_path = self.project_path.canonicalize().unwrap();
-        let abs_path = path.canonicalize().unwrap();
+        let abs_project_path = resolve_absolute_path(self.project_path()).unwrap();
+        let abs_path = resolve_absolute_path(path).unwrap();
         abs_path.starts_with(abs_project_path)
     }
+}
+
+/// Resolves a given path to an absolute, canonical path.
+///
+/// - Follows symbolic links.
+/// - Returns an error if the path does not exist.
+/// - On Windows, strips extended-length path prefix (e.g. `\\?\C:\...`)
+pub fn resolve_absolute_path(input: &Path) -> io::Result<PathBuf> {
+    let canonical = fs::canonicalize(input)?;
+    Ok(normalize_path(canonical))
+}
+
+#[cfg(windows)]
+fn normalize_path(p: PathBuf) -> PathBuf {
+    // Remove extended-length prefix like \\?\C:\...
+    if let Ok(s) = p.into_os_string().into_string() {
+        let cleaned = s.strip_prefix(r"\\?\").unwrap_or(&s);
+        PathBuf::from(cleaned)
+    } else {
+        // fallback for non-UTF-8 paths
+        PathBuf::new()
+    }
+}
+
+#[cfg(not(windows))]
+fn normalize_path(p: PathBuf) -> PathBuf {
+    p
 }
