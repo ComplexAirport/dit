@@ -61,7 +61,7 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_history(&mut self, count: usize) -> CliResult<()> {
+    pub fn handle_history(&mut self, count: isize) -> CliResult<()> {
         let dit = self.get_dit();
 
         let commits = dit.history(count)?;

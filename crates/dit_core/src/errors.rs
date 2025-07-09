@@ -2,6 +2,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DitCoreError {
+    #[error("branch error: {0}")]
+    BranchError(#[from] BranchError),
+    
     #[error("staging error: {0}")]
     StagingError(#[from] StagingError),
 
@@ -26,6 +29,13 @@ pub enum DitCoreError {
 
 pub type DitResult<T> = Result<T, DitCoreError>;
 
+
+/// Errors related to branches
+#[derive(Error, Debug)]
+pub enum BranchError {
+    #[error("A branch with name '{0}' already exists")]
+    BranchAlreadyExists(String),
+}
 
 /// Errors related to staging
 #[derive(Error, Debug)]

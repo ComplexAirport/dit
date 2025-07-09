@@ -16,7 +16,7 @@ pub enum CommandKind {
 
     History {
         #[arg(short, long, default_value = "5")]
-        count: usize
+        count: isize
     },
 
     Status,

@@ -1,12 +1,12 @@
 ﻿//! This module provides the API to work with the Dit version control system
 
 use crate::commit::{Commit, CommitMgr};
-use crate::dit_project::DitProject;
 use crate::stage::{StageMgr, StagedFiles};
+use crate::branch::BranchMgr;
+use crate::dit_project::DitProject;
+use crate::errors::DitResult;
 use std::path::Path;
 use std::rc::Rc;
-use crate::errors::DitResult;
-use crate::helpers::{read_to_string, write_to_file};
 
 /// Main API for working with the Dit version control system
 pub struct Dit {
@@ -18,8 +18,8 @@ pub struct Dit {
     /// Represents the stage manager
     stage_mgr: StageMgr,
 
-    /// Head hash
-    head: Option<String>,
+    /// Represents the branches manager
+    branch_mgr: BranchMgr,
 }
 
 /// Constructors
@@ -28,17 +28,17 @@ impl Dit {
     /// Creates commit, tree and blob managers
     pub fn from<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
         let project = Rc::new(DitProject::init(project_path)?);
+
         let commit_mgr = CommitMgr::from(project.clone());
         let stage_mgr = StageMgr::from(project.clone())?;
+        let branch_mgr = BranchMgr::from(project.clone())?;
 
-        let mut dit = Self {
+        let dit = Self {
             project,
             commit_mgr,
             stage_mgr,
-            head: None,
+            branch_mgr,
         };
-
-        Self::load_head(&mut dit)?;
 
         Ok(dit)
     }
@@ -52,18 +52,16 @@ impl Dit {
         S1: Into<String>,
         S2: Into<String>,
     {
-        self.load_head()?; // load the head to access parent hash
-
         let author = author.into();
         let message = message.into();
         let staged_files = self.stage_mgr.staged_files();
+        let parent = self.branch_mgr.get_head_commit().cloned();
 
         let commit_hash = self.commit_mgr.create_commit(
-            author, message, staged_files, self.head.clone()
+            author, message, staged_files, parent
         )?;
 
-        self.head = Some(commit_hash);
-        self.update_head()?;
+        self.branch_mgr.set_head_commit(commit_hash)?;
 
         // Clean up the stage
         self.stage_mgr.clear_stage()?;
@@ -82,19 +80,21 @@ impl Dit {
     }
 
     /// Returns the commit history
-    pub fn history(&mut self, mut count: usize) -> DitResult<Vec<Commit>> {
-        self.update_head()?;
+    pub fn history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
+        if count < 0 {
+            count = isize::MAX;
+        }
+
         let mut commits = Vec::new();
+        let mut head_commit = self.branch_mgr.get_head_commit().cloned();
 
-        let mut head_hash = self.head.clone();
-
-        while let Some(head) = &head_hash {
+        while let Some(head) = &head_commit {
             if count == 0 {
                 break;
             }
 
             let commit = self.commit_mgr.get_commit(head)?;
-            head_hash = commit.parent.clone();
+            head_commit = commit.parent.clone();
             commits.push(commit);
 
             count -= 1;
@@ -110,37 +110,3 @@ impl Dit {
     }
 }
 
-/// Manage the head ([`HEAD_FILE`])
-///
-/// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-impl Dit {
-    /// Loads the head stored in self based on [`HEAD_FILE`]
-    ///
-    /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn load_head(&mut self) -> DitResult<()> {
-        let path = self.project.head_file();
-        let head = read_to_string(&path)?;
-
-        if head.is_empty() {
-            self.head = None;
-        } else {
-            self.head = Some(head);
-        }
-
-        Ok(())
-    }
-
-    /// Updates the [`HEAD_FILE`] based on head stored in self
-    ///
-    /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn update_head(&mut self) -> DitResult<()> {
-        let path = self.project.head_file();
-
-        match &self.head {
-            Some(head) => write_to_file(&path, head)?,
-            None => write_to_file(&path, "")?,
-        }
-
-        Ok(())
-    }
-}

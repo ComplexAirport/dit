@@ -10,22 +10,25 @@ pub struct DitProject {
     project_path: PathBuf,
 
     /// [`DIT_ROOT`]
-    dit: PathBuf,
+    dit_root: PathBuf,
 
     /// [`BLOBS_ROOT`]
-    blobs: PathBuf,
+    blobs_root: PathBuf,
 
     /// [`TREES_ROOT`]
-    trees: PathBuf,
+    trees_root: PathBuf,
 
     /// [`STAGE_ROOT`]
-    stage: PathBuf,
+    stage_root: PathBuf,
 
     /// [`STAGE_FILE`]
     stage_file: PathBuf,
 
     /// [`COMMITS_ROOT`]
-    commits: PathBuf,
+    commits_root: PathBuf,
+
+    /// [`BRANCHES_ROOT`]
+    branches_root: PathBuf,
 
     /// [`HEAD_FILE`]
     head_file: PathBuf,
@@ -57,6 +60,9 @@ impl DitProject {
         let commits_root = project_path.join(COMMITS_ROOT);
         Self::init_sub_dir(&commits_root)?;
 
+        let branches_root = project_path.join(BRANCHES_ROOT);
+        Self::init_sub_dir(&branches_root)?;
+
         // Initialize the files ONLY after creating all subdirectories
         let stage_file = project_path.join(STAGE_FILE);
         Self::init_sub_file(&stage_file)?;
@@ -66,12 +72,13 @@ impl DitProject {
 
         Ok(Self {
             project_path,
-            dit: dit_root,
-            blobs: blobs_root,
-            trees: trees_root,
-            stage: stage_root,
+            dit_root,
+            blobs_root,
+            trees_root,
+            stage_root,
             stage_file,
-            commits: commits_root,
+            commits_root,
+            branches_root,
             head_file,
         })
     }
@@ -108,22 +115,22 @@ impl DitProject {
 
     /// Returns the [`DIT_ROOT`] path
     pub fn dit(&self) -> &Path {
-        &self.dit
+        &self.dit_root
     }
 
     /// Returns the [`BLOBS_ROOT`] path
     pub fn blobs(&self) -> &Path {
-        &self.blobs
+        &self.blobs_root
     }
 
     /// Returns the [`TREES_ROOT`] path
     pub fn trees(&self) -> &Path {
-        &self.trees
+        &self.trees_root
     }
 
     /// Returns the [`STAGE_ROOT`] path
     pub fn stage(&self) -> &Path {
-        &self.stage
+        &self.stage_root
     }
 
     /// Returns the [`STAGE_FILE`] path
@@ -133,7 +140,12 @@ impl DitProject {
 
     /// Returns the [`COMMITS_ROOT`] path
     pub fn commits(&self) -> &Path {
-        &self.commits
+        &self.commits_root
+    }
+
+    /// Returns the [`BRANCHES_ROOT`] path
+    pub fn branches(&self) -> &Path {
+        &self.branches_root
     }
 
     /// Returns the [`HEAD_FILE`] path
