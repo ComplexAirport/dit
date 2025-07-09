@@ -84,6 +84,11 @@ impl Dit {
         self.branch_mgr.create_branch(name)
     }
 
+    /// Returns the name of the current branch
+    pub fn branch(&self) -> Option<String> {
+        self.branch_mgr.get_current_branch().cloned()
+    }
+
     /// Returns the commit history
     pub fn history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
         if count < 0 {

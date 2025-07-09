@@ -65,7 +65,14 @@ impl DitHandler {
     pub fn handle_history(&mut self, count: isize) -> CliResult<()> {
         let dit = self.get_dit();
 
+        let branch_name = dit.branch();
         let commits = dit.history(count)?;
+
+        if let Some(branch_name) = branch_name {
+            println!("History for the branch '{branch_name}':\n");
+        } else {
+            println!("History (no head):\n");
+        }
 
         for (idx, commit) in commits.iter().enumerate() {
             let hash_slice = &commit.hash[0..8];
@@ -83,9 +90,17 @@ impl DitHandler {
         // or last time being staged
 
         let dit = self.get_dit();
+        let branch_name = dit.branch();
         let staged_files = dit.staged_files()?;
 
-        println!("staged: ");
+        if let Some(branch_name) = branch_name {
+            println!("On branch '{branch_name}'")
+        } else {
+            println!("No current branch");
+        }
+
+        println!();
+        println!("Changes to be committed: ");
         for path in staged_files.files.keys() {
             println!("       {}", path.display());
         }

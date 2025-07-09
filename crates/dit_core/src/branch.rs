@@ -62,6 +62,11 @@ impl BranchMgr {
         Ok(())
     }
 
+    /// Returns the name of the current branch
+    pub fn get_current_branch(&self) -> Option<&String> {
+        self.curr_branch.as_ref()
+    }
+    
     /// Sets the head commit to a new value
     pub fn set_head_commit<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
         let commit = commit.as_ref();
