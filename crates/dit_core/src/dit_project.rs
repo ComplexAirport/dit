@@ -1,7 +1,8 @@
 ﻿use crate::constants::*;
-use std::{fs, io};
-use std::io::Error;
+use crate::errors::{DitResult, ProjectError};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use crate::helpers::resolve_absolute_path;
 
 /// Stores paths of the components of the dit project
 pub struct DitProject {
@@ -33,16 +34,12 @@ pub struct DitProject {
 /// Constructor
 impl DitProject {
     /// Ensures all dir project components are created
-    pub fn init<P: AsRef<Path>>(project_path: P) -> io::Result<Self> {
+    pub fn init<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
         let project_path = project_path.as_ref().to_path_buf();
+
         if !project_path.is_dir() {
-            return Err(Error::new(
-                io::ErrorKind::NotADirectory,
-                format!(
-                    "given project path '{}' is not a directory",
-                    project_path.display()
-                ),
-            ));
+            return Err(ProjectError::ProjectPathNotADirectory(
+                project_path.display().to_string()).into());
         }
 
         let dit_root = project_path.join(DIT_ROOT);
@@ -78,18 +75,25 @@ impl DitProject {
             head_file,
         })
     }
-    fn init_sub_dir(path: &Path) -> io::Result<()> {
+
+    fn init_sub_dir(path: &Path) -> DitResult<()> {
         if !path.is_dir() {
-            fs::create_dir_all(path)?;
+            fs::create_dir_all(path)
+                .map_err(|_|
+                    ProjectError::SubDirCreationError(path.display().to_string()))?;
+
         }
         Ok(())
     }
 
-    fn init_sub_file(path: &Path) -> io::Result<()> {
+    fn init_sub_file(path: &Path) -> DitResult<()> {
         if !path.is_file() {
             // this should not fail because subdirectories are created
             // before creating the files
-            fs::File::create(path)?;
+            File::create(path)
+                .map_err(|_|
+                    ProjectError::SubFileCreationError(path.display().to_string())
+                )?;
         }
         Ok(())
     }
@@ -140,7 +144,7 @@ impl DitProject {
     /// Returns the path of a given path relative to the project path. \
     /// For example, if the project path is `D:\Projects\project1\` and the given path is
     /// `D:\Projects\project1\src\main.py`, this method will return `src\main.py`
-    pub fn get_relative_path<P: AsRef<Path>>(&self, path: P) -> io::Result<PathBuf> {
+    pub fn get_relative_path<P: AsRef<Path>>(&self, path: P) -> DitResult<PathBuf> {
         let path = path.as_ref();
         if self.includes_path(path) {
             Ok(path
@@ -148,13 +152,7 @@ impl DitProject {
                 .unwrap()
                 .to_path_buf())
         } else {
-            Err(Error::new(
-                io::ErrorKind::InvalidInput,
-                format!(
-                    "the path '{}' is not a inside the dit project",
-                    path.display()
-                ),
-            ))
+            Err(ProjectError::FileNotInProject(path.display().to_string()).into())
         }
     }
 
@@ -170,29 +168,3 @@ impl DitProject {
     }
 }
 
-/// Resolves a given path to an absolute, canonical path.
-///
-/// - Follows symbolic links.
-/// - Returns an error if the path does not exist.
-/// - On Windows, strips extended-length path prefix (e.g. `\\?\C:\...`)
-pub fn resolve_absolute_path(input: &Path) -> io::Result<PathBuf> {
-    let canonical = fs::canonicalize(input)?;
-    Ok(normalize_path(canonical))
-}
-
-#[cfg(windows)]
-fn normalize_path(p: PathBuf) -> PathBuf {
-    // Remove extended-length prefix like \\?\C:\...
-    if let Ok(s) = p.into_os_string().into_string() {
-        let cleaned = s.strip_prefix(r"\\?\").unwrap_or(&s);
-        PathBuf::from(cleaned)
-    } else {
-        // fallback for non-UTF-8 paths
-        PathBuf::new()
-    }
-}
-
-#[cfg(not(windows))]
-fn normalize_path(p: PathBuf) -> PathBuf {
-    p
-}

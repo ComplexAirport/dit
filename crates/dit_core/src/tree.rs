@@ -30,12 +30,13 @@
 use crate::blob::BlobMgr;
 use crate::dit_project::DitProject;
 use crate::stage::StagedFiles;
+use crate::errors::{DitResult, TreeError};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
+use crate::helpers::{read_to_string, write_to_file};
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
@@ -47,16 +48,18 @@ pub struct TreeMgr {
 
 /// Constructors
 impl TreeMgr {
-    pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
+    pub fn from(project: Rc<DitProject>) -> Self {
         let blob_mgr = BlobMgr::from(project.clone());
-        Ok(Self { project, blob_mgr })
+        Self { project, blob_mgr }
     }
 }
 
 /// API
 impl TreeMgr {
     /// Creates a tree and returns the tree hash
-    pub fn create_tree(&self, staged_files: &StagedFiles, parent_tree_hash: Option<String>) -> io::Result<String> {
+    pub fn create_tree(&self, staged_files: &StagedFiles, parent_tree_hash: Option<String>)
+        -> DitResult<String>
+    {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree
         // hash being dependent on traversal order
@@ -92,20 +95,25 @@ impl TreeMgr {
 /// Private helper methods
 impl TreeMgr {
     /// Writes the tree to the trees directory
-    fn write_tree(&self, tree: &Tree) -> io::Result<()> {
-        let serialized = serde_json::to_string_pretty(&tree)?;
+    fn write_tree(&self, tree: &Tree) -> DitResult<()> {
+        let serialized = serde_json::to_string(&tree)
+            .map_err(|_| TreeError::SerializationError(tree.hash.clone()))?;
+
         let path = self.project.trees().join(tree.hash.clone());
-        if !path.is_file() {
-            std::fs::write(path, serialized)?;
-        }
+        write_to_file(&path, &serialized)?;
+
         Ok(())
     }
 
     /// Reads and returns a tree from the tree's hash
-    fn get_tree(&self, tree_hash: String) -> io::Result<Tree> {
+    fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
         let path = self.project.trees().join(tree_hash.clone());
-        let serialized = std::fs::read_to_string(path)?;
-        let tree: Tree = serde_json::from_str(&serialized)?;
+
+        let serialized = read_to_string(&path)?;
+
+        let tree: Tree = serde_json::from_str(&serialized)
+            .map_err(|_| TreeError::DeserializationError(tree_hash))?;
+
         Ok(tree)
     }
 }

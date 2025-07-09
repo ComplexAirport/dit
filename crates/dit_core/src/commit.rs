@@ -8,9 +8,9 @@
 use crate::dit_project::DitProject;
 use crate::stage::StagedFiles;
 use crate::tree::TreeMgr;
+use crate::errors::{DitResult, CommitError, OtherError, FsError};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::io;
 use std::rc::Rc;
 use std::time::SystemTime;
 
@@ -24,9 +24,9 @@ pub struct CommitMgr {
 
 /// Constructors
 impl CommitMgr {
-    pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
-        let tree_mgr = TreeMgr::from(project.clone())?;
-        Ok(Self { project, tree_mgr })
+    pub fn from(project: Rc<DitProject>) -> Self {
+        let tree_mgr = TreeMgr::from(project.clone());
+        Self { project, tree_mgr }
     }
 }
 
@@ -39,7 +39,7 @@ impl CommitMgr {
         message: String,
         staged_files: &StagedFiles,
         parent_commit_hash: Option<String>,
-    ) -> io::Result<String> {
+    ) -> DitResult<String> {
         let parent_tree_hash = if let Some(parent_commit_hash) = &parent_commit_hash {
             let parent_commit = self.get_commit(parent_commit_hash)?;
             Some(parent_commit.tree)
@@ -51,7 +51,7 @@ impl CommitMgr {
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
-            .expect("Time went backwards")
+            .map_err(|_| OtherError::TimeWentBackwardsError)?
             .as_secs();
 
         let mut hasher = Sha256::new();
@@ -78,7 +78,7 @@ impl CommitMgr {
 
 
     /// Returns a commit by hash
-    pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
+    pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
         self.load_commit(hash)
     }
 }
@@ -86,19 +86,27 @@ impl CommitMgr {
 /// Private helper methods
 impl CommitMgr {
     /// Writes the given commit to the commits directory
-    fn write_commit(&self, commit: &Commit) -> io::Result<()> {
-        let serialized = serde_json::to_string_pretty(&commit)?;
+    fn write_commit(&self, commit: &Commit) -> DitResult<()> {
+        let serialized = serde_json::to_string_pretty(&commit)
+            .map_err(|_| CommitError::SerializationError(commit.hash.clone()))?;
+
         let path = self.project.commits().join(&commit.hash);
-        std::fs::write(path, serialized)?;
+        std::fs::write(&path, &serialized)
+            .map_err(|_| FsError::FileWriteError(path.display().to_string()))?;
         Ok(())
     }
 
     /// Reads and returns a commit given the commit's hash
-    fn load_commit<S: AsRef<str>>(&self, hash: S) -> io::Result<Commit> {
+    fn load_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
         let hash = hash.as_ref();
         let path = self.project.commits().join(hash);
-        let serialized = std::fs::read_to_string(path)?;
-        let mut commit: Commit = serde_json::from_str(&serialized)?;
+
+        let serialized = std::fs::read_to_string(&path)
+            .map_err(|_| FsError::FileReadError(path.display().to_string()))?;
+
+        let mut commit: Commit = serde_json::from_str(&serialized)
+            .map_err(|_| CommitError::DeserializationError(hash.to_string()))?;
+
         commit.hash = hash.to_string();
         Ok(commit)
     }

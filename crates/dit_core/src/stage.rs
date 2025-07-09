@@ -18,10 +18,18 @@
 
 use crate::constants::BUFFER_SIZE;
 use crate::dit_project::DitProject;
+use crate::errors::{DitResult, StagingError};
+use crate::helpers::{
+    get_buf_reader,
+    get_buf_writer,
+    read_from_buf_reader,
+    read_to_string,
+    remove_file,
+    write_to_buf_writer,
+    write_to_file
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use uuid::Uuid;
@@ -34,7 +42,7 @@ pub struct StageMgr {
 }
 
 impl StageMgr {
-    pub fn from(project: Rc<DitProject>) -> io::Result<Self> {
+    pub fn from(project: Rc<DitProject>) -> DitResult<Self> {
         let mut mgr = Self {
             project,
             staged_files: StagedFiles::new(),
@@ -50,7 +58,7 @@ impl StageMgr {
 
 impl StageMgr {
     /// Stages a file based on its path
-    pub fn stage_file<P: AsRef<Path>>(&mut self, file_path: P) -> io::Result<()> {
+    pub fn stage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
         let file_path = self.project.get_relative_path(file_path)?;
 
         // generate a unique filename to copy the staged file to
@@ -62,15 +70,16 @@ impl StageMgr {
             }
         };
 
-        let mut reader = BufReader::new(File::open(&file_path)?);
-        let mut writer = BufWriter::new(File::create(&write_to)?);
+        let mut reader = get_buf_reader(&file_path)?;
+        let mut writer = get_buf_writer(&write_to)?;
+
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
         loop {
-            let n = reader.read(&mut buffer)?;
+            let n = read_from_buf_reader(&mut reader, &mut buffer, &file_path)?;
             if n == 0 {
                 break;
             }
-            writer.write_all(&buffer[..n])?;
+            write_to_buf_writer(&mut writer, &buffer[..n], &file_path)?;
         }
 
         self.staged_files
@@ -83,14 +92,14 @@ impl StageMgr {
     }
 
     /// Unstages a file based on its path
-    pub fn unstage_file<P: AsRef<Path>>(&mut self, file_path: P) -> io::Result<()> {
+    pub fn unstage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
         let file_path = file_path.as_ref();
         let relative_path = self.project.get_relative_path(file_path)?;
 
         let staged_path = self.staged_files.files.remove(&relative_path);
 
         if let Some(staged_path) = staged_path {
-            std::fs::remove_file(staged_path)?;
+            remove_file(&staged_path)?;
         }
 
         self.update_stage_file()?;
@@ -101,9 +110,9 @@ impl StageMgr {
     /// Clears all staged files and clears the [`STAGE_FILE`]
     ///
     /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
-    pub fn clear_stage(&mut self) -> io::Result<()> {
+    pub fn clear_stage(&mut self) -> DitResult<()> {
         for path in self.staged_files.files.values() {
-            std::fs::remove_file(path)?;
+            remove_file(path)?;
         }
         self.staged_files.files.clear();
         self.update_stage_file()?;
@@ -113,13 +122,15 @@ impl StageMgr {
     /// Updates staged files stored in self based on the data in the [`STAGE_FILE`]
     ///
     /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
-    fn load_stage_file(&mut self) -> io::Result<()> {
+    fn load_stage_file(&mut self) -> DitResult<()> {
         let path = self.project.stage_file();
-        let serialized = std::fs::read_to_string(path)?;
+        let serialized = read_to_string(&path)?;
+
         let staged_files = if serialized.is_empty() {
             StagedFiles::new()
         } else {
-            serde_json::from_str(&serialized)?
+            serde_json::from_str(&serialized)
+                .map_err(|_| StagingError::DeserializationError)?
         };
 
         self.staged_files = staged_files;
@@ -130,10 +141,14 @@ impl StageMgr {
     /// Updates the data in the [`STAGE_FILE`] based on staged files stored in self
     ///
     /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
-    fn update_stage_file(&mut self) -> io::Result<()> {
+    fn update_stage_file(&mut self) -> DitResult<()> {
         let path = self.project.stage_file();
-        let serialized = serde_json::to_string_pretty(&self.staged_files)?;
-        std::fs::write(path, serialized)?;
+
+        let serialized = serde_json::to_string_pretty(&self.staged_files)
+            .map_err(|_| StagingError::SerializationError)?;
+
+        write_to_file(&path, serialized)?;
+
         Ok(())
     }
 }

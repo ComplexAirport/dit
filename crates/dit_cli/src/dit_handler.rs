@@ -1,7 +1,10 @@
 ﻿use crate::cli::CommandKind;
-use dit_core::dit::Dit;
-use dit_core::{resolve_absolute_path, DIT_ROOT};
-use std::io;
+use crate::error::{CliResult, DitCliError};
+use dit_core::{
+    dit::Dit,
+    helpers::resolve_absolute_path,
+    DIT_ROOT,
+};
 use std::path::{Path, PathBuf};
 
 pub struct DitHandler {
@@ -9,9 +12,10 @@ pub struct DitHandler {
 }
 
 impl DitHandler {
-    pub fn new() -> io::Result<Self> {
+    pub fn new() -> CliResult<Self> {
         let cwd = std::env::current_dir()
-            .expect("[-] Failed to get current working directory");
+            .map_err(|_| DitCliError::CwdError)?;
+
         let project_root = Self::find_dit_root(cwd);
         match project_root {
             Some(project_root) => {
@@ -22,7 +26,7 @@ impl DitHandler {
         }
     }
 
-    pub fn handle(&mut self, command: CommandKind) -> io::Result<()> {
+    pub fn handle(&mut self, command: CommandKind) -> CliResult<()> {
         match command {
             CommandKind::Init => self.handle_init(),
             CommandKind::History { count } => self.handle_history(count),
@@ -48,15 +52,16 @@ impl DitHandler {
 }
 
 impl DitHandler {
-    pub fn handle_init(&mut self) -> io::Result<()> {
-        let cwd = std::env::current_dir()?;
+    pub fn handle_init(&mut self) -> CliResult<()> {
+        let cwd = std::env::current_dir()
+            .map_err(|_| DitCliError::CwdError)?;
         let dit = Dit::from(&cwd)?;
         self.dit = Some(dit);
         println!("[+] Initialized a new dit project.");
         Ok(())
     }
 
-    pub fn handle_history(&mut self, count: usize) -> io::Result<()> {
+    pub fn handle_history(&mut self, count: usize) -> CliResult<()> {
         let dit = self.get_dit();
 
         let commits = dit.history(count)?;
@@ -70,7 +75,7 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_status(&mut self) -> io::Result<()> {
+    pub fn handle_status(&mut self) -> CliResult<()> {
         // todo: this needs to be changed
         // also need to display files which are not tracked
         // and also the files which were changed compared to the last commit
@@ -87,7 +92,7 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_add(&mut self, files: Vec<PathBuf>) -> io::Result<()> {
+    pub fn handle_add(&mut self, files: Vec<PathBuf>) -> CliResult<()> {
         for file in files {
             let abs_path = resolve_absolute_path(&file)?;
             self.get_dit().stage(&abs_path)?;
@@ -96,7 +101,7 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_unstage(&mut self, files: Vec<PathBuf>) -> io::Result<()> {
+    pub fn handle_unstage(&mut self, files: Vec<PathBuf>) -> CliResult<()> {
         for file in files {
             let abs_path = resolve_absolute_path(&file)?;
             self.get_dit().unstage(&abs_path)?;
@@ -105,7 +110,7 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_commit(&mut self, author: String, message: String) -> io::Result<()> {
+    pub fn handle_commit(&mut self, author: String, message: String) -> CliResult<()> {
         self.get_dit().commit(&author, &message)?;
         println!("[+] Committed the changes");
         Ok(())

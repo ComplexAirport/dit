@@ -5,7 +5,8 @@ use crate::dit_project::DitProject;
 use crate::stage::{StageMgr, StagedFiles};
 use std::path::Path;
 use std::rc::Rc;
-use std::{fs, io};
+use crate::errors::DitResult;
+use crate::helpers::{read_to_string, write_to_file};
 
 /// Main API for working with the Dit version control system
 pub struct Dit {
@@ -25,9 +26,9 @@ pub struct Dit {
 impl Dit {
     /// Constructs the object given the project path (inside which the `.dit` is located) \
     /// Creates commit, tree and blob managers
-    pub fn from<P: AsRef<Path>>(project_path: P) -> io::Result<Self> {
+    pub fn from<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
         let project = Rc::new(DitProject::init(project_path)?);
-        let commit_mgr = CommitMgr::from(project.clone())?;
+        let commit_mgr = CommitMgr::from(project.clone());
         let stage_mgr = StageMgr::from(project.clone())?;
 
         let mut dit = Self {
@@ -46,7 +47,7 @@ impl Dit {
 /// Dit API
 impl Dit {
     /// Commits the changes given the commit author and the message
-    pub fn commit<S1, S2>(&mut self, author: S1, message: S2) -> io::Result<()>
+    pub fn commit<S1, S2>(&mut self, author: S1, message: S2) -> DitResult<()>
     where
         S1: Into<String>,
         S2: Into<String>,
@@ -71,17 +72,17 @@ impl Dit {
     }
 
     /// Stages a file given the file path
-    pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> io::Result<()> {
+    pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
         self.stage_mgr.stage_file(path)
     }
 
     /// Unstages the file given the file path
-    pub fn unstage<P: AsRef<Path>>(&mut self, path: P) -> io::Result<()> {
+    pub fn unstage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
         self.stage_mgr.unstage_file(path)
     }
 
     /// Returns the commit history
-    pub fn history(&mut self, mut count: usize) -> io::Result<Vec<Commit>> {
+    pub fn history(&mut self, mut count: usize) -> DitResult<Vec<Commit>> {
         self.update_head()?;
         let mut commits = Vec::new();
 
@@ -103,7 +104,7 @@ impl Dit {
     }
 
     /// Returns staged files
-    pub fn staged_files(&mut self) -> io::Result<&StagedFiles> {
+    pub fn staged_files(&mut self) -> DitResult<&StagedFiles> {
         let files = self.stage_mgr.staged_files();
         Ok(files)
     }
@@ -116,9 +117,9 @@ impl Dit {
     /// Loads the head stored in self based on [`HEAD_FILE`]
     ///
     /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn load_head(&mut self) -> io::Result<()> {
+    fn load_head(&mut self) -> DitResult<()> {
         let path = self.project.head_file();
-        let head = fs::read_to_string(path)?;
+        let head = read_to_string(&path)?;
 
         if head.is_empty() {
             self.head = None;
@@ -132,12 +133,12 @@ impl Dit {
     /// Updates the [`HEAD_FILE`] based on head stored in self
     ///
     /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn update_head(&mut self) -> io::Result<()> {
+    fn update_head(&mut self) -> DitResult<()> {
         let path = self.project.head_file();
 
         match &self.head {
-            Some(head) => fs::write(path, head)?,
-            None => fs::write(path, "")?,
+            Some(head) => write_to_file(&path, head)?,
+            None => write_to_file(&path, "")?,
         }
 
         Ok(())
