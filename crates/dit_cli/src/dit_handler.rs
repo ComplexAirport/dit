@@ -34,6 +34,7 @@ impl DitHandler {
             CommandKind::Add { files } => self.handle_add(files),
             CommandKind::Unstage { files } => self.handle_unstage(files),
             CommandKind::Commit { author, message } => self.handle_commit(author, message),
+            CommandKind::Branch { name, new } => self.handle_branch(name, new),
         }
     }
 
@@ -113,6 +114,16 @@ impl DitHandler {
     pub fn handle_commit(&mut self, author: String, message: String) -> CliResult<()> {
         self.get_dit().commit(&author, &message)?;
         println!("[+] Committed the changes");
+        Ok(())
+    }
+
+    pub fn handle_branch(&mut self, name: String, is_new: bool) -> CliResult<()> {
+        if is_new {
+            self.get_dit().create_branch(&name)?;
+            println!("[+] Created a new branch '{name}'");
+        } else {
+            eprintln!("[-] switching branches is not supported yet"); // todo
+        }
         Ok(())
     }
 }

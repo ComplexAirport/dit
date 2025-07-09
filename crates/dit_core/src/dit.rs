@@ -79,6 +79,11 @@ impl Dit {
         self.stage_mgr.unstage_file(path)
     }
 
+    /// Creates a new branch
+    pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
+        self.branch_mgr.create_branch(name)
+    }
+
     /// Returns the commit history
     pub fn history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
         if count < 0 {

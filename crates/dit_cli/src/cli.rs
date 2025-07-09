@@ -21,6 +21,13 @@ pub enum CommandKind {
 
     Status,
 
+    Branch {
+        name: String,
+        
+        #[arg(short, long, default_value = "false")]
+        new: bool,
+    },
+
     Add {
         files: Vec<PathBuf>,
     },
