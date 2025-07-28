@@ -79,13 +79,13 @@ impl DitHandler {
         if let Some(branch_name) = branch_name {
             println!("History for the branch '{branch_name}':\n");
         } else {
-            println!("History (no head):\n");
+            println!("History (detached head):\n");
         }
 
         for (idx, commit) in commits.iter().enumerate() {
-            let hash_slice = &commit.hash[0..8];
-            println!("  {}. {hash_slice}..", idx + 1);
-            println!("{} - {}", commit.author, commit.message);
+            let hash_slice = &commit.hash; // &commit.hash[0..8];
+            println!("{}. {hash_slice}", idx + 1);
+            println!("    {} - {}", commit.author, commit.message);
         }
 
         Ok(())
@@ -99,6 +99,7 @@ impl DitHandler {
 
         let dit = self.get_dit();
         let branch_name = dit.branch();
+        let head_commit = dit.head_commit();
         let staged_files = dit.staged_files()?;
 
         if let Some(branch_name) = branch_name {
@@ -107,10 +108,19 @@ impl DitHandler {
             println!("No current branch");
         }
 
-        println!();
-        println!("Changes to be committed: ");
-        for path in staged_files.files.keys() {
-            println!("       {}", path.display());
+        if let Some(head_commit) = head_commit {
+            println!("Parent commit: '{head_commit}'")
+        } else {
+            println!("No commits yet");
+        }
+
+        if !staged_files.files.is_empty() {
+            println!("Changes to be committed: ");
+            for path in staged_files.files.keys() {
+                println!("    {}", path.display());
+            }
+        } else {
+            println!();
         }
 
         Ok(())

@@ -1,5 +1,4 @@
 ﻿//! This module provides the API to work with the Dit version control system
-//! 
 use crate::commit::{Commit, CommitMgr};
 use crate::stage::{StageMgr, StagedFiles};
 use crate::branch::BranchMgr;
@@ -129,6 +128,9 @@ impl Dit {
     pub fn branch(&self) -> Option<String> {
         self.branch_mgr.get_current_branch().cloned()
     }
+
+    /// Returns the hash of the current HEAD commit
+    pub fn head_commit(&self) -> Option<String> { self.branch_mgr.get_head_commit().cloned() }
 
     /// Returns the commit history
     pub fn history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
