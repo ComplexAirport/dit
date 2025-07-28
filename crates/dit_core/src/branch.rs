@@ -25,10 +25,6 @@ impl BranchMgr {
 
         Self::load(&mut branch_mgr)?;
 
-        // if branch_mgr.curr_branch.is_none() {
-        //     branch_mgr.create_branch(DEFAULT_BRANCH)?;
-        // }
-
         Ok(branch_mgr)
     }
 }

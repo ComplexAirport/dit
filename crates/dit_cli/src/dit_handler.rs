@@ -56,7 +56,14 @@ impl DitHandler {
     pub fn handle_init(&mut self) -> CliResult<()> {
         let cwd = std::env::current_dir()
             .map_err(|_| DitCliError::CwdError)?;
-        let dit = Dit::from(&cwd)?;
+        let mut dit = Dit::from(&cwd)?;
+
+        // default behavior:
+        // if no head branch is found, a default "main" branch will be created
+        if dit.branch().is_none() {
+            dit.create_branch("main")?;
+        }
+
         self.dit = Some(dit);
         println!("[+] Initialized a new dit project.");
         Ok(())
