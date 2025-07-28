@@ -23,11 +23,11 @@ impl BranchMgr {
             curr_commit: None,
         };
 
-        Self::load_current_commit(&mut branch_mgr)?;
+        Self::load(&mut branch_mgr)?;
 
-        if branch_mgr.curr_branch.is_none() {
-            branch_mgr.create_branch(DEFAULT_BRANCH)?;
-        }
+        // if branch_mgr.curr_branch.is_none() {
+        //     branch_mgr.create_branch(DEFAULT_BRANCH)?;
+        // }
 
         Ok(branch_mgr)
     }
@@ -57,7 +57,7 @@ impl BranchMgr {
         }
 
         self.curr_branch = Some(name.to_string());
-        self.update_current_branch()?;
+        self.store()?;
 
         Ok(())
     }
@@ -66,93 +66,68 @@ impl BranchMgr {
     pub fn get_current_branch(&self) -> Option<&String> {
         self.curr_branch.as_ref()
     }
-    
+
     /// Sets the head commit to a new value
     pub fn set_head_commit<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
         let commit = commit.as_ref();
         self.curr_commit = Some(commit.to_string());
-        self.update_current_commit()?;
+        self.store()?;
         Ok(())
     }
 
-    /// Returns the current commit hash
-    pub fn get_head_commit(&self) -> Option<&String> {
-        self.curr_commit.as_ref()
-    }
+    /// Returns the hash of the current commit
+    pub fn get_head_commit(&self) -> Option<&String> { self.curr_commit.as_ref() }
 }
 
 
 /// Private helper methods
 impl BranchMgr {
-    /// Loads the current commit based on the current branch
-    fn load_current_commit(&mut self) -> DitResult<()> {
-        self.load_current_branch()?;
-
-        match &self.curr_branch {
-            None => {
-                self.curr_commit = None;
-            }
-
-            Some(curr_branch) => {
-                let path = self.project.branches().join(curr_branch);
-                let commit = read_to_string(&path)?;
-                if commit.is_empty() {
-                    self.curr_commit = None;
-                } else {
-                    self.curr_commit = Some(commit);
-                }
-            }
-        }
-        Ok(())
-    }
-
-
-    /// Updates the current commit file based on the current commit in self
-    fn update_current_commit(&mut self) -> DitResult<()> {
-        self.load_current_branch()?;
-
-        if let Some(curr_branch) = &self.curr_branch {
-            match &self.curr_commit {
-                None => {
-                    let path = self.project.branches().join(curr_branch);
-                    write_to_file(&path, "")?;
-                }
-
-                Some(curr_commit) => {
-                    let path = self.project.branches().join(curr_branch);
-                    write_to_file(&path, curr_commit)?;
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Loads the current branch based on [`HEAD_FILE`]
+    /// Loads the current branch and(or) commit based on [`HEAD_FILE`]
     ///
     /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn load_current_branch(&mut self) -> DitResult<()> {
+    fn load(&mut self) -> DitResult<()> {
         let path = self.project.head_file();
-        let head = read_to_string(&path)?;
+        let head = read_to_string(path)?;
 
-        if head.is_empty() {
+        // if the head starts with ":", then it references a commit and not a branch
+        if let Some(head) = head.strip_prefix(':') {
+            self.curr_commit = Some(head.to_string());
             self.curr_branch = None;
+        } else if head.is_empty() {
+            self.curr_branch = None;
+            self.curr_commit = None;
         } else {
+            let path = self.project.branches().join(&head);
+            let commit = read_to_string(&path)?;
+            if commit.is_empty() {
+                self.curr_commit = None;
+            } else {
+                self.curr_commit = Some(commit);
+            }
             self.curr_branch = Some(head);
         }
 
         Ok(())
     }
 
-    /// Updates the [`HEAD_FILE`] based on the current branch stored in self
+    /// Updates the [`HEAD_FILE`] based on the current branch and(or) commit stored in self
     ///
     /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
-    fn update_current_branch(&mut self) -> DitResult<()> {
-        let path = self.project.head_file();
+    fn store(&mut self) -> DitResult<()> {
+        let head_file = self.project.head_file();
 
-        match &self.curr_branch {
-            Some(head) => write_to_file(&path, head)?,
-            None => write_to_file(&path, "")?,
+        if let Some(curr_branch) = &self.curr_branch {
+            write_to_file(head_file, curr_branch)?;
+            let branch_file = self.project.branches().join(curr_branch);
+            match &self.curr_commit {
+                Some(curr_commit) => write_to_file(&branch_file, curr_commit)?,
+                None => write_to_file(&branch_file, "")?,
+            }
+        } else {
+            match &self.curr_commit {
+                Some(head) => write_to_file(head_file, format!(":{}", head))?,
+                None => write_to_file(head_file, "")?,
+            }
         }
 
         Ok(())

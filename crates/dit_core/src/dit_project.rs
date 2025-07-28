@@ -1,8 +1,8 @@
 ﻿use crate::constants::*;
 use crate::errors::{DitResult, ProjectError};
+use crate::helpers::resolve_absolute_path;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use crate::helpers::resolve_absolute_path;
 
 /// Stores paths of the components of the dit project
 pub struct DitProject {
@@ -106,7 +106,7 @@ impl DitProject {
     }
 }
 
-/// Getters
+/// API
 impl DitProject {
     /// Returns the project path where the `.dit` is located
     pub fn project_path(&self) -> &Path {
@@ -179,4 +179,3 @@ impl DitProject {
         abs_path.starts_with(abs_project_path)
     }
 }
-
