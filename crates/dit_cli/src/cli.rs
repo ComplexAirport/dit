@@ -1,5 +1,5 @@
 ﻿use std::path::{PathBuf};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(name = "dit")]
@@ -42,5 +42,19 @@ pub enum CommandKind {
 
         #[arg(short, long)]
         author: String
-    }
+    },
+
+    Reset {
+        commit: String,
+
+        #[arg(value_enum, default_value_t = ResetMode::Mixed)]
+        mode: ResetMode,
+    },
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+pub enum ResetMode {
+    Soft,
+    Mixed,
+    Hard,
 }

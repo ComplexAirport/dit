@@ -1,7 +1,6 @@
 use crate::dit_project::DitProject;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
-use crate::constants::DEFAULT_BRANCH;
 use std::rc::Rc;
 
 pub struct BranchMgr {

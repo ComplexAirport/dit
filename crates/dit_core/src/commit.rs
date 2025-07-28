@@ -19,7 +19,7 @@ pub struct CommitMgr {
     project: Rc<DitProject>,
 
     /// Represents the tree manager [`TreeMgr`]
-    tree_mgr: TreeMgr,
+    pub(crate) tree_mgr: TreeMgr,
 }
 
 /// Constructors
@@ -80,6 +80,29 @@ impl CommitMgr {
     /// Returns a commit by hash
     pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
         self.load_commit(hash)
+    }
+
+    /// Checks whether a commit is a direct or indirect parent to another commit. This basically
+    /// checks if the parent commit is reachable from the child commit.
+    pub fn is_parent<S1, S2>(&self, parent: S1, child: S2)
+        -> DitResult<bool>
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
+        let parent = parent.as_ref();
+        let child = child.as_ref();
+
+        let mut current = Some(child.to_string());
+        while let Some(head) = current {
+            let commit = self.get_commit(head)?;
+            if commit.hash == parent {
+                return Ok(true);
+            }
+            current = commit.parent;
+        }
+
+        Ok(false)
     }
 }
 

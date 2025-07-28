@@ -1,4 +1,4 @@
-﻿use crate::cli::CommandKind;
+﻿use crate::cli::{CommandKind, ResetMode};
 use crate::error::{CliResult, DitCliError};
 use dit_core::{
     dit::Dit,
@@ -31,10 +31,11 @@ impl DitHandler {
             CommandKind::Init => self.handle_init(),
             CommandKind::History { count } => self.handle_history(count),
             CommandKind::Status => self.handle_status(),
+            CommandKind::Branch { name, new } => self.handle_branch(name, new),
             CommandKind::Add { files } => self.handle_add(files),
             CommandKind::Unstage { files } => self.handle_unstage(files),
             CommandKind::Commit { author, message } => self.handle_commit(author, message),
-            CommandKind::Branch { name, new } => self.handle_branch(name, new),
+            CommandKind::Reset { mode, commit } => self.handle_reset(mode, commit),
         }
     }
 
@@ -144,11 +145,28 @@ impl DitHandler {
             self.get_dit().create_branch(&name)?;
             println!("[+] Created a new branch '{name}'");
         } else {
-            eprintln!("[-] switching branches is not supported yet"); // todo
+            eprintln!("[-] Switching branches is not supported yet"); // todo
+        }
+        Ok(())
+    }
+
+    pub fn handle_reset(&mut self, reset_mode: ResetMode, commit: String) -> CliResult<()> {
+        let dit = self.get_dit();
+
+        match reset_mode {
+            ResetMode::Mixed => {
+                dit.mixed_reset(&commit)?;
+                println!("[+] Mixed reset to commit '{commit}'");
+            },
+
+            _ => {
+                println!("[-] This reset mode is not supported yet :(")
+            }
         }
         Ok(())
     }
 }
+
 
 impl DitHandler {
     /// Recursively searches for `.dit` starting from `start_dir` \

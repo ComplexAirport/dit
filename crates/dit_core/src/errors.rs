@@ -37,6 +37,7 @@ pub enum BranchError {
     BranchAlreadyExists(String),
 }
 
+
 /// Errors related to staging
 #[derive(Error, Debug)]
 pub enum StagingError {
@@ -56,6 +57,9 @@ pub enum CommitError {
 
     #[error("Failed to deserialize the commit with hash '{0}'")]
     DeserializationError(String),
+
+    #[error("The commit '{0}' is unreachable from the commit '{1}'")]
+    UnreachableCommitError(String, String),
 }
 
 
@@ -116,6 +120,9 @@ pub enum FsError {
     #[error("Directory '{0}' not found")]
     DirNotFoundError(String),
 
+    #[error("Failed to create the directory(s) '{0}'")]
+    DitCreateError(String),
+
     #[error("Failed to read from the file '{0}'")]
     FileReadError(String),
 
@@ -127,6 +134,9 @@ pub enum FsError {
 
     #[error("Failed to remove the file '{0}'")]
     FileRemoveError(String),
+
+    #[error("Failed to create the file '{0}'")]
+    FileCreateError(String),
 
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),

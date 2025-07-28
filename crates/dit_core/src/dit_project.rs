@@ -153,6 +153,16 @@ impl DitProject {
         &self.head_file
     }
 
+    /// Returns the absolute path of a given relative path in the project
+    pub fn get_absolute_path<P: AsRef<Path>>(&self, relative_path: P) -> DitResult<PathBuf> {
+        let path = relative_path.as_ref();
+        if self.includes_path(path) {
+            Ok(resolve_absolute_path(path)?)
+        } else {
+            Err(ProjectError::FileNotInProject(path.display().to_string()).into())
+        }
+    }
+
     /// Returns the path of a given path relative to the project path. \
     /// For example, if the project path is `D:\Projects\project1\` and the given path is
     /// `D:\Projects\project1\src\main.py`, this method will return `src\main.py`

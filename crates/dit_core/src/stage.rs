@@ -16,18 +16,16 @@
 //! location of the copied file in the temporary "buffer" zone. This way,
 //! when a commit happens, the system knows where to find the staged file content.
 
-use crate::constants::BUFFER_SIZE;
 use crate::dit_project::DitProject;
-use crate::errors::{DitResult, StagingError};
 use crate::helpers::{
     get_buf_reader,
     get_buf_writer,
-    read_from_buf_reader,
     read_to_string,
     remove_file,
-    write_to_buf_writer,
-    write_to_file
+    write_to_file,
+    transfer_data,
 };
+use crate::errors::{DitResult, StagingError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -73,14 +71,7 @@ impl StageMgr {
         let mut reader = get_buf_reader(&file_path)?;
         let mut writer = get_buf_writer(&write_to)?;
 
-        let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
-        loop {
-            let n = read_from_buf_reader(&mut reader, &mut buffer, &file_path)?;
-            if n == 0 {
-                break;
-            }
-            write_to_buf_writer(&mut writer, &buffer[..n], &file_path)?;
-        }
+        transfer_data(&mut reader, &mut writer, &file_path)?;
 
         self.staged_files
             .files

@@ -25,11 +25,9 @@
 //! This file can later be reused for the same file if the contents don't change
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
-use crate::constants::BUFFER_SIZE;
 use crate::dit_project::DitProject;
 use crate::errors::{DitResult, BlobError};
-use crate::helpers::{get_buf_reader, get_buf_writer, read_from_buf_reader, write_to_buf_writer};
-use sha2::{Digest, Sha256};
+use crate::helpers::{get_buf_reader, get_buf_writer, transfer_data_hashed};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -55,30 +53,13 @@ impl BlobMgr {
     pub fn create_blob<P: Into<PathBuf>>(&self, path: P) -> DitResult<String> {
         let path = path.into();
 
-        // We will create one reader, one writer and one hasher.
-        // The reader will read a fixed size of bytes from the source file
-        // into a buffer, update the hasher using this buffer and
-        // write it to a temporary file. When the final hash is calculated,
-        // this temporary file will be renamed to that hash, creating the blob.
         let mut reader = get_buf_reader(&path)?;
 
         let temp_file_path = self.project.blobs().join(".temp");
         let mut writer = get_buf_writer(&temp_file_path)?;
 
-        let mut hasher = Sha256::new();
-        let mut buffer = [0; BUFFER_SIZE];
-        loop {
-            let n = read_from_buf_reader(&mut reader, &mut buffer, &temp_file_path)?;
+        let hash = transfer_data_hashed(&mut reader, &mut writer, &temp_file_path)?;
 
-            if n == 0 {
-                break;
-            }
-            hasher.update(&buffer[..n]);
-
-            write_to_buf_writer(&mut writer, &buffer[..n], &temp_file_path)?;
-        }
-
-        let hash = format!("{:x}", hasher.finalize());
         let target_file = self.project.blobs().join(&hash);
 
         if target_file.is_file() {

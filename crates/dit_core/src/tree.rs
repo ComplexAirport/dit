@@ -31,19 +31,19 @@ use crate::blob::BlobMgr;
 use crate::dit_project::DitProject;
 use crate::stage::StagedFiles;
 use crate::errors::{DitResult, TreeError};
+use crate::helpers::{read_to_string, write_to_file};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
-use crate::helpers::{read_to_string, write_to_file};
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
     project: Rc<DitProject>,
 
     /// Represents the blobs manager [`BlobMgr`]
-    blob_mgr: BlobMgr,
+    pub(crate) blob_mgr: BlobMgr,
 }
 
 /// Constructors
@@ -90,6 +90,18 @@ impl TreeMgr {
 
         Ok(hash)
     }
+
+    /// Reads and returns a tree from the tree's hash
+    pub fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
+        let path = self.project.trees().join(tree_hash.clone());
+
+        let serialized = read_to_string(&path)?;
+
+        let tree: Tree = serde_json::from_str(&serialized)
+            .map_err(|_| TreeError::DeserializationError(tree_hash))?;
+
+        Ok(tree)
+    }
 }
 
 /// Private helper methods
@@ -103,18 +115,6 @@ impl TreeMgr {
         write_to_file(&path, &serialized)?;
 
         Ok(())
-    }
-
-    /// Reads and returns a tree from the tree's hash
-    fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
-        let path = self.project.trees().join(tree_hash.clone());
-
-        let serialized = read_to_string(&path)?;
-
-        let tree: Tree = serde_json::from_str(&serialized)
-            .map_err(|_| TreeError::DeserializationError(tree_hash))?;
-
-        Ok(tree)
     }
 }
 
