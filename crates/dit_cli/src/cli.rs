@@ -49,7 +49,7 @@ pub enum CommandKind {
         mode: ResetMode,
     },
 
-    Stash,
+    Clear,
 }
 
 #[derive(Subcommand)]

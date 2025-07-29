@@ -122,7 +122,7 @@ impl Dit {
     }
 
     /// Clears the stage
-    pub fn stash(&mut self) -> DitResult<()> {
+    pub fn clear_stage(&mut self) -> DitResult<()> {
         self.stage_mgr.clear_stage()
     }
 }

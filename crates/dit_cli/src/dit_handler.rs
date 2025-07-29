@@ -45,8 +45,8 @@ impl DitHandler {
                 self.handle_commit(author, message),
             CommandKind::Reset { mode, commit } =>
                 self.handle_reset(mode, commit),
-            CommandKind::Stash =>
-                self.handle_stash(),
+            CommandKind::Clear =>
+                self.handle_clear(),
 
         }
     }
@@ -224,10 +224,10 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_stash(&mut self) -> CliResult<()> {
+    pub fn handle_clear(&mut self) -> CliResult<()> {
         let dit = self.get_dit();
-        dit.stash()?;
-        println!("[+] Stashed the changes");
+        dit.clear_stage()?;
+        println!("[+] Cleared the stage.");
         Ok(())
     }
 }

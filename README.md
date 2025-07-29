@@ -1,88 +1,100 @@
 ﻿# Dit
 
 **Dit** is a minimal version control system inspired by Git.  
-It supports staging, committing, and viewing history, etc.
+It supports staging, committing, resetting to previous commits, branching, viewing history, etc.
+
+
 
 ---
 
-## Usage
+## Example workflow
 
 ```bash
-dit <COMMAND> [OPTIONS]
-```
-
----
-
-##  Available Commands
-
-### `init`
-
-Initialize a new dit repository in the current directory.
-
-```bash
+# 1. Initialise
 dit init
+
+# 2. Stage files
+dit add src/main.rs Cargo.toml
+
+# 3. Commit
+dit commit -m "Initial commit" -a "ComplexAirport <complexaiport@example.com>"
+
+# 4. Create and switch to a feature branch
+dit branch new feature_login
+dit branch switch feature_login
+
+# ... work on th files
+# 5. Stage, commit...
+dit add src/auth.rs
+dit commit -m "Add basic features" -a "ComplexAirport <complexaiport@example.com>"
+
+# 6. Review history
+dit history --count 10
 ```
 
 ---
 
-### `status`
+## Commands
 
-Show the current repository status: staged files, unstaged changes, and untracked files.
+### `dit init`
 
-```bash
-dit status
-```
+Create a `.dit/` directory in the current working directory (if it didn't already exist) and set up default branch **main**.
 
 ---
 
-### `add <files...>`
+### `dit history [-c|--count <N>]`
 
-Stage one or more files for the next commit.
-
-```bash
-dit add file1.txt dir/file2.rs
-```
+Print the latest `N` commits (default **5**) in reverse chronological order.
 
 ---
 
-### `unstage <files...>`
+### `dit status`
 
-Remove one or more files from the staging area.
+Show:
 
-```bash
-dit unstage file1.txt dir/file2.rs
-```
-
----
-
-### `commit -m <message> -a <author>`
-
-Create a new commit with a message and author.
-
-```bash
-dit commit -m "Initial commit" -a "ComplexAirport"
-```
+* Untracked files
+* Tracked but modified files
+* Staged files awaiting commit
 
 ---
 
-### `history [-c <count>]`
+### `dit add <FILES…>`
 
-Show the latest commits (default: 5).
+Stage one or more paths (files or directories) for the next commit.
 
-```bash
-dit history
-dit history -c 10
-```
+### `dit unstage <FILES…>`
+
+Remove paths from the staging area without touching working-tree content.
 
 ---
 
-## Example Workflow
+### `dit commit -m|--message <MSG> -a|--author <AUTHOR>`
 
-```bash
-dit init
-dit add src/main.rs
-dit add Cargo.toml
-dit status
-dit commit -m "Initial commit" -a "ComplexAirport"
-dit history
-```
+Create a new commit from the staging area.
+
+> **Author format:** `"Name <email>"`
+> Example: `-a "ComplexAirport <complexaiport@example.com>"`
+
+---
+
+### `dit branch …`
+
+| Sub-command     | Purpose                                                          | Options                                |
+|-----------------|------------------------------------------------------------------|----------------------------------------|
+| `new <name>`    | Create a new branch which will point to the current commit head. |                                        |
+| `switch <name>` | Move `HEAD` to `<name>`.                                         | `--hard` = throw away unstaged changes |
+| `remove <name>` | Removes a branch.                                                |                                        |
+
+---
+
+### `dit reset <COMMIT> [--mode <soft|mixed|hard>]`
+
+| Mode                  | Description                                         |
+|-----------------------|-----------------------------------------------------|
+| **mixed** *(default)* | Retains the files not included in the target commit |
+| **hard**              | Erases all new files and removes all the changes    |
+
+---
+
+### `dit clear`
+Clears all the staged changes
