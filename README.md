@@ -79,11 +79,11 @@ Create a new commit from the staging area.
 
 ### `dit branch …`
 
-| Sub-command     | Purpose                                                          | Options                                |
-|-----------------|------------------------------------------------------------------|----------------------------------------|
-| `new <name>`    | Create a new branch which will point to the current commit head. |                                        |
-| `switch <name>` | Move `HEAD` to `<name>`.                                         | `--hard` = throw away unstaged changes |
-| `remove <name>` | Removes a branch.                                                |                                        |
+| Sub-command     | Purpose                                                          | Options                                   |
+|-----------------|------------------------------------------------------------------|-------------------------------------------|
+| `new <name>`    | Create a new branch which will point to the current commit head. |                                           |
+| `switch <name>` | Switches to the specified branch                                 | `--hard` = throw away uncommitted changes |
+| `remove <name>` | Removes a branch.                                                |                                           |
 
 ---
 
