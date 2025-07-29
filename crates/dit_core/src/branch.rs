@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::dit_project::DitProject;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
@@ -35,9 +36,13 @@ impl BranchMgr {
     /// Returns an error if a branch with a such name already exists
     pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
         let name = name.as_ref();
-        let path = self.project.branches().join(name);
 
-        if path.exists() {
+        if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+            return Err(BranchError::InvalidBranchName(name.to_string()).into())
+        }
+
+        let (exists, path) = self.find_branch(name);
+        if exists {
             return Err(BranchError::BranchAlreadyExists(name.to_string()).into())
         }
 
@@ -72,6 +77,14 @@ impl BranchMgr {
 
     /// Returns the hash of the current commit
     pub fn get_head_commit(&self) -> Option<&String> { self.curr_commit.as_ref() }
+
+    /// Returns a bool indicating whether the branch exists or not and the path to that branch
+    pub fn find_branch<S: AsRef<str>>(&self, name: S) -> (bool, PathBuf) {
+        let name = name.as_ref();
+        let path = self.project.branches().join(name);
+
+        (path.exists(), path)
+    }
 }
 
 

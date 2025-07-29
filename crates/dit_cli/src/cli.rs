@@ -22,10 +22,8 @@ pub enum CommandKind {
     Status,
 
     Branch {
-        name: String,
-        
-        #[arg(short, long, default_value = "false")]
-        new: bool,
+        #[command(subcommand)]
+        command: BranchCommand,
     },
 
     Add {
@@ -50,6 +48,26 @@ pub enum CommandKind {
         #[arg(value_enum, default_value_t = ResetMode::Mixed)]
         mode: ResetMode,
     },
+
+    Stash,
+}
+
+#[derive(Subcommand)]
+pub enum BranchCommand {
+    Switch {
+        name: String,
+
+        #[arg(long)]
+        hard: bool,
+    },
+
+    New {
+        name: String,
+    },
+
+    Remove {
+        name: String,
+    }
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]

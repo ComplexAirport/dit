@@ -30,6 +30,14 @@ pub fn remove_file<P: AsRef<Path>>(path: P) -> DitResult<()> {
 }
 
 
+/// Removes a directory using [`fs::remove_dir_all`] and maps the error to [`FsError`]
+pub fn remove_dir<P: AsRef<Path>>(path: P) -> DitResult<()> {
+    let path = path.as_ref();
+    fs::remove_dir_all(path)
+        .map_err(|_| FsError::DirRemoveError(path.display().to_string()).into())
+}
+
+
 /// Creates a file and all the necessary subdirectories (if they don't exist) and maps
 /// the result to [`FsError`]
 pub fn create_file_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
@@ -41,7 +49,7 @@ pub fn create_file_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
 
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)
-            .map_err(|_| FsError::DitCreateError(parent.display().to_string()))?;
+            .map_err(|_| FsError::DirCreateError(parent.display().to_string()))?;
     }
 
     File::create(path)

@@ -1,4 +1,4 @@
-﻿use crate::cli::{CommandKind, ResetMode};
+﻿use crate::cli::{BranchCommand, CommandKind, ResetMode};
 use crate::error::{CliResult, DitCliError};
 use dit_core::{
     dit::Dit,
@@ -29,14 +29,25 @@ impl DitHandler {
 
     pub fn handle(&mut self, command: CommandKind) -> CliResult<()> {
         match command {
-            CommandKind::Init => self.handle_init(),
-            CommandKind::History { count } => self.handle_history(count),
-            CommandKind::Status => self.handle_status(),
-            CommandKind::Branch { name, new } => self.handle_branch(name, new),
-            CommandKind::Add { files } => self.handle_add(files),
-            CommandKind::Unstage { files } => self.handle_unstage(files),
-            CommandKind::Commit { author, message } => self.handle_commit(author, message),
-            CommandKind::Reset { mode, commit } => self.handle_reset(mode, commit),
+            CommandKind::Init =>
+                self.handle_init(),
+            CommandKind::History { count } =>
+                self.handle_history(count),
+            CommandKind::Status =>
+                self.handle_status(),
+            CommandKind::Branch { command } =>
+                self.handle_branch(command),
+            CommandKind::Add { files } =>
+                self.handle_add(files),
+            CommandKind::Unstage { files } =>
+                self.handle_unstage(files),
+            CommandKind::Commit { author, message } =>
+                self.handle_commit(author, message),
+            CommandKind::Reset { mode, commit } =>
+                self.handle_reset(mode, commit),
+            CommandKind::Stash =>
+                self.handle_stash(),
+
         }
     }
 
@@ -177,13 +188,23 @@ impl DitHandler {
         Ok(())
     }
 
-    pub fn handle_branch(&mut self, name: String, is_new: bool) -> CliResult<()> {
-        if is_new {
-            self.get_dit().create_branch(&name)?;
-            println!("[+] Created a new branch '{name}'");
-        } else {
-            eprintln!("[-] Switching branches is not supported yet"); // todo
+    pub fn handle_branch(&mut self, command: BranchCommand) -> CliResult<()> {
+        match command {
+            BranchCommand::New { name } => {
+                self.get_dit().create_branch(&name)?;
+                println!("[+] Created a new branch '{name}'");
+            }
+
+            BranchCommand::Switch { name, hard } => {
+                self.get_dit().switch_branch(&name, hard)?;
+                println!("[+] Switched to branch '{name}'");
+            }
+
+            BranchCommand::Remove { name } => {
+                eprintln!("[-] Removing branches is not supported yet"); // todo
+            }
         }
+
         Ok(())
     }
 
@@ -200,6 +221,13 @@ impl DitHandler {
                 println!("[-] This reset mode is not supported yet :(")
             }
         }
+        Ok(())
+    }
+
+    pub fn handle_stash(&mut self) -> CliResult<()> {
+        let dit = self.get_dit();
+        dit.stash()?;
+        println!("[+] Stashed the changes");
         Ok(())
     }
 }

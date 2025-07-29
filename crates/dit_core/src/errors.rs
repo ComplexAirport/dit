@@ -35,6 +35,16 @@ pub type DitResult<T> = Result<T, DitCoreError>;
 pub enum BranchError {
     #[error("A branch with name '{0}' already exists")]
     BranchAlreadyExists(String),
+
+    #[error("A branch with name '{0}' doesn't exists")]
+    BranchDoesNotExist(String),
+
+    #[error("Invalid branch name '{0}'")]
+    InvalidBranchName(String),
+
+    #[error("Cannot switch to branch '{0}' because there are staged changes.
+    Commit the changes, stash them or use hard switching.")]
+    CannotSwitchBranches(String),
 }
 
 
@@ -121,7 +131,13 @@ pub enum FsError {
     DirNotFoundError(String),
 
     #[error("Failed to create the directory(s) '{0}'")]
-    DitCreateError(String),
+    DirCreateError(String),
+
+    #[error("Failed to read the directory '{0}'")]
+    DirReadError(String),
+
+    #[error("Failed to remove the directory '{0}'")]
+    DirRemoveError(String),
 
     #[error("Failed to read from the file '{0}'")]
     FileReadError(String),

@@ -110,12 +110,17 @@ impl StageMgr {
         Ok(())
     }
 
+    /// Checks whether the stage is empty
+    pub fn is_staged(&self) -> bool {
+        !self.staged_files.files.is_empty()
+    }
+
     /// Updates staged files stored in self based on the data in the [`STAGE_FILE`]
     ///
     /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
     fn load_stage_file(&mut self) -> DitResult<()> {
         let path = self.project.stage_file();
-        let serialized = read_to_string(&path)?;
+        let serialized = read_to_string(path)?;
 
         let staged_files = if serialized.is_empty() {
             StagedFiles::new()
@@ -132,13 +137,13 @@ impl StageMgr {
     /// Updates the data in the [`STAGE_FILE`] based on staged files stored in self
     ///
     /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
-    fn update_stage_file(&mut self) -> DitResult<()> {
+    fn update_stage_file(&self) -> DitResult<()> {
         let path = self.project.stage_file();
 
         let serialized = serde_json::to_string_pretty(&self.staged_files)
             .map_err(|_| StagingError::SerializationError)?;
 
-        write_to_file(&path, serialized)?;
+        write_to_file(path, serialized)?;
 
         Ok(())
     }

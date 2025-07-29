@@ -1,12 +1,13 @@
 ﻿//! This module provides the API to work with the Dit version control system
+
 use crate::commit::{Commit, CommitMgr};
 use crate::stage::{StageMgr, StagedFiles};
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::dit_project::DitProject;
-use crate::errors::{CommitError, DitResult};
-use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
+use crate::errors::{BranchError, CommitError, DitResult, FsError};
+use crate::helpers::{create_file_all, get_buf_writer, read_to_string, remove_dir, remove_file, transfer_data};
 use std::path::Path;
 use std::rc::Rc;
 
@@ -46,7 +47,7 @@ impl Dit {
     }
 }
 
-/// Dit API
+/// Commiting
 impl Dit {
     /// Commits the changes given the commit author and the message
     pub fn commit<S1, S2>(&mut self, author: S1, message: S2) -> DitResult<()>
@@ -71,22 +72,7 @@ impl Dit {
         Ok(())
     }
 
-    /// Stages a file given the file path
-    pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
-        self.stage_mgr.stage_file(path)
-    }
-
-    /// Unstages the file given the file path
-    pub fn unstage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
-        self.stage_mgr.unstage_file(path)
-    }
-
-    /// Creates a new branch
-    pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
-        self.branch_mgr.create_branch(name)
-    }
-
-    /// Performs a mixed reset to a specific commit. All files not included in 
+    /// Performs a mixed reset to a specific commit. All files not included in
     /// that commit tree stay the same.
     pub fn mixed_reset<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
         let commit = commit.as_ref();
@@ -121,6 +107,66 @@ impl Dit {
         Ok(())
     }
 }
+
+
+/// Staging
+impl Dit {
+    /// Stages a file given the file path
+    pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
+        self.stage_mgr.stage_file(path)
+    }
+
+    /// Unstages the file given the file path
+    pub fn unstage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
+        self.stage_mgr.unstage_file(path)
+    }
+
+    /// Clears the stage
+    pub fn stash(&mut self) -> DitResult<()> {
+        self.stage_mgr.clear_stage()
+    }
+}
+
+
+/// Branching
+impl Dit {
+    /// Creates a new branch
+    pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
+        self.branch_mgr.create_branch(name)
+    }
+
+    /// Switches to a different branch
+    pub fn switch_branch<S: AsRef<str>>(&mut self, name: S, is_hard: bool) -> DitResult<()> {
+        let name = name.as_ref();
+        let (exists, path) = self.branch_mgr.find_branch(name);
+
+        if !exists {
+            return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
+        }
+
+        if self.stage_mgr.is_staged() {
+            if !is_hard {
+                return Err(BranchError::CannotSwitchBranches(name.to_string()).into());
+            } else {
+                // if the hard mode is set, any staged changes will be cleared
+                self.stage_mgr.clear_stage()?;
+            }
+        }
+
+        // Get the commit tree
+        let target_commit_hash = read_to_string(path)?;
+        let target_commit = self.commit_mgr.get_commit(&target_commit_hash)?;
+        let files = self.tree_mgr().get_tree(target_commit.tree)?.files;
+
+        // Remove the current project root
+        self.clear_root()?;
+
+        self.branch_mgr.set_head_commit(target_commit_hash)?;
+
+        Ok(())
+    }
+}
+
 
 /// Getters
 impl Dit {
@@ -163,6 +209,7 @@ impl Dit {
     }
 }
 
+
 /// Private helpers
 impl Dit {
     /// Returns the project's [`TreeMgr`]
@@ -173,5 +220,11 @@ impl Dit {
     /// Returns the project's [`BlobMgr`]
     pub const fn blob_mgr(&mut self) -> &mut BlobMgr {
         &mut self.tree_mgr().blob_mgr
+    }
+
+    /// Removes all files from the projects root directory except the `.dit` file
+    /// todo: add except the files in `.ditignore`
+    pub fn clear_root(&mut self) -> DitResult<()> {
+        todo!()
     }
 }
