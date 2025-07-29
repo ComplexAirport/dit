@@ -86,11 +86,11 @@ impl Dit {
         self.branch_mgr.create_branch(name)
     }
 
-    /// Performs a mixed reset to a specific commit. All files not included in that commit tree stay
-    /// the same.
+    /// Performs a mixed reset to a specific commit. All files not included in 
+    /// that commit tree stay the same.
     pub fn mixed_reset<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
-        let head = self.branch_mgr.get_head_commit().cloned();
         let commit = commit.as_ref();
+        let head = self.branch_mgr.get_head_commit().cloned();
 
         // Check if the commit is reachable
         if let Some(head) = head {

@@ -11,6 +11,7 @@ pub struct DitHandler {
     dit: Option<Dit>,
 }
 
+
 impl DitHandler {
     pub fn new() -> CliResult<Self> {
         let cwd = std::env::current_dir()
@@ -51,12 +52,32 @@ impl DitHandler {
             }
         }
     }
+
+    /// Recursively searches for `.dit` starting from `start_dir` \
+    /// Returns the path to the root of the dit repo if found, None otherwise
+    fn find_dit_root<P: AsRef<Path>>(start_dir: P) -> Option<PathBuf> {
+        let start_dir = start_dir.as_ref();
+        let mut current = Some(start_dir);
+
+        while let Some(dir) = current {
+            if dir.join(DIT_ROOT).is_dir() {
+                return Some(dir.to_path_buf());
+            }
+            current = dir.parent();
+        }
+        None
+    }
 }
+
 
 impl DitHandler {
     pub fn handle_init(&mut self) -> CliResult<()> {
         let cwd = std::env::current_dir()
             .map_err(|_| DitCliError::CwdError)?;
+
+        // check if the dit is already initialized or existed before
+        let is_new = !cwd.join(DIT_ROOT).is_dir();
+
         let mut dit = Dit::from(&cwd)?;
 
         // default behavior:
@@ -66,7 +87,13 @@ impl DitHandler {
         }
 
         self.dit = Some(dit);
-        println!("[+] Initialized a new dit project.");
+
+        if is_new {
+            println!("[+] Initialized a new dit directory in '{}'.", cwd.display());
+        } else {
+            println!("[+] Reinitialized the existing dit directory in '{}'.", cwd.display());
+        }
+
         Ok(())
     }
 
@@ -174,23 +201,5 @@ impl DitHandler {
             }
         }
         Ok(())
-    }
-}
-
-
-impl DitHandler {
-    /// Recursively searches for `.dit` starting from `start_dir` \
-    /// Returns the path to the root of the dit repo if found, None otherwise
-    fn find_dit_root<P: AsRef<Path>>(start_dir: P) -> Option<PathBuf> {
-        let start_dir = start_dir.as_ref();
-        let mut current = Some(start_dir);
-
-        while let Some(dir) = current {
-            if dir.join(DIT_ROOT).is_dir() {
-                return Some(dir.to_path_buf());
-            }
-            current = dir.parent();
-        }
-        None
     }
 }
