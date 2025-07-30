@@ -1,11 +1,11 @@
-use std::path::PathBuf;
 use crate::repo::Repo;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
-use std::rc::Rc;
 use crate::commit::CommitMgr;
 use crate::stage::StageMgr;
 use crate::tree::TreeMgr;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 pub struct BranchMgr {
     repo: Rc<Repo>,

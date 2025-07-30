@@ -139,6 +139,9 @@ pub enum FsError {
     #[error("Failed to remove the directory '{0}'")]
     DirRemoveError(String),
 
+    #[error("Failed to walk the directory '{0}'")]
+    DirWalkError(String),
+
     #[error("Failed to read from the file '{0}'")]
     FileReadError(String),
 
