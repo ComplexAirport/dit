@@ -1,4 +1,4 @@
-﻿use crate::constants::BUFFER_SIZE;
+﻿use crate::helpers::BUFFER_SIZE;
 use crate::errors::{DitResult, FsError};
 use crate::helpers::io_read::read_from_buf_reader;
 use std::fs;

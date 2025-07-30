@@ -5,7 +5,7 @@ use crate::stage::{StageMgr, StagedFiles};
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::errors::DitResult;
 use std::cell::RefCell;
 use std::path::Path;
@@ -26,14 +26,14 @@ impl Dit {
     /// Constructs the object given the project path (inside which the `.dit` is located) \
     /// Constructs all the managers
     pub fn from<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
-        let project = Rc::new(DitProject::init(project_path)?);
+        let repo = Rc::new(Repo::init(project_path)?);
 
         let dit = Self {
-            blob_mgr: RefCell::new(BlobMgr::from(project.clone())),
-            tree_mgr: RefCell::new(TreeMgr::from(project.clone())),
-            stage_mgr: RefCell::new(StageMgr::from(project.clone())?),
-            commit_mgr: RefCell::new(CommitMgr::from(project.clone())),
-            branch_mgr: RefCell::new(BranchMgr::from(project)?),
+            blob_mgr: RefCell::new(BlobMgr::from(repo.clone())),
+            tree_mgr: RefCell::new(TreeMgr::from(repo.clone())),
+            stage_mgr: RefCell::new(StageMgr::from(repo.clone())?),
+            commit_mgr: RefCell::new(CommitMgr::from(repo.clone())),
+            branch_mgr: RefCell::new(BranchMgr::from(repo)?),
         };
 
         Ok(dit)

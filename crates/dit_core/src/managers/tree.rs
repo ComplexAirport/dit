@@ -28,7 +28,7 @@
 //! ```
 
 use crate::blob::BlobMgr;
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::stage::StagedFiles;
 use crate::errors::{DitResult, TreeError};
 use crate::helpers::{read_to_string, write_to_file};
@@ -40,13 +40,13 @@ use std::rc::Rc;
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
-    project: Rc<DitProject>,
+    repo: Rc<Repo>,
 }
 
 /// Constructors
 impl TreeMgr {
-    pub fn from(project: Rc<DitProject>) -> Self {
-        Self { project }
+    pub fn from(repo: Rc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -92,7 +92,7 @@ impl TreeMgr {
 
     /// Reads and returns a tree from the tree's hash
     pub fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
-        let path = self.project.trees().join(tree_hash.clone());
+        let path = self.repo.trees().join(tree_hash.clone());
 
         let serialized = read_to_string(&path)?;
 
@@ -110,7 +110,7 @@ impl TreeMgr {
         let serialized = serde_json::to_string(&tree)
             .map_err(|_| TreeError::SerializationError(tree.hash.clone()))?;
 
-        let path = self.project.trees().join(tree.hash.clone());
+        let path = self.repo.trees().join(tree.hash.clone());
         write_to_file(&path, &serialized)?;
 
         Ok(())

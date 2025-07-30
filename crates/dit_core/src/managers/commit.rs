@@ -5,7 +5,7 @@
 //! The metadata includes the author who wrote the changes, the parent
 //! commit, the commit message, etc.
 
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::branch::BranchMgr;
@@ -19,13 +19,13 @@ use std::time::SystemTime;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
-    project: Rc<DitProject>,
+    repo: Rc<Repo>,
 }
 
 /// Constructors
 impl CommitMgr {
-    pub fn from(project: Rc<DitProject>) -> Self {
-        Self { project }
+    pub fn from(repo: Rc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -92,7 +92,7 @@ impl CommitMgr {
         for (rel_path, blob_hash) in files {
             let mut reader = blob_mgr.get_blob_reader(blob_hash)?;
 
-            let abs_path = self.project.get_absolute_path(&rel_path)?;
+            let abs_path = self.repo.get_absolute_path(&rel_path)?;
             create_file_all(&abs_path)?;
             let mut writer = get_buf_writer(&abs_path)?;
 
@@ -145,7 +145,7 @@ impl CommitMgr {
         let serialized = serde_json::to_string_pretty(&commit)
             .map_err(|_| CommitError::SerializationError(commit.hash.clone()))?;
 
-        let path = self.project.commits().join(&commit.hash);
+        let path = self.repo.commits().join(&commit.hash);
         std::fs::write(&path, &serialized)
             .map_err(|_| FsError::FileWriteError(path.display().to_string()))?;
         Ok(())
@@ -154,7 +154,7 @@ impl CommitMgr {
     /// Reads and returns a commit given the commit's hash
     fn load_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
         let hash = hash.as_ref();
-        let path = self.project.commits().join(hash);
+        let path = self.repo.commits().join(hash);
 
         let serialized = std::fs::read_to_string(&path)
             .map_err(|_| FsError::FileReadError(path.display().to_string()))?;

@@ -25,7 +25,7 @@
 //! This file can later be reused for the same file if the contents don't change
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::errors::{DitResult, BlobError};
 use crate::helpers::{get_buf_reader, get_buf_writer, transfer_data_hashed};
 use std::fs::File;
@@ -37,13 +37,13 @@ use std::rc::Rc;
 /// (see [`crate::blob`] for more detailed info)
 pub struct BlobMgr {
     /// Represents the blobs directory, [`BLOBS_ROOT`]
-    project: Rc<DitProject>,
+    repo: Rc<Repo>,
 }
 
 /// Constructors
 impl BlobMgr {
-    pub fn from(project: Rc<DitProject>) -> Self {
-        Self { project }
+    pub fn from(project: Rc<Repo>) -> Self {
+        Self { repo: project }
     }
 }
 
@@ -55,12 +55,12 @@ impl BlobMgr {
 
         let mut reader = get_buf_reader(&path)?;
 
-        let temp_file_path = self.project.blobs().join(".temp");
+        let temp_file_path = self.repo.blobs().join(".temp");
         let mut writer = get_buf_writer(&temp_file_path)?;
 
         let hash = transfer_data_hashed(&mut reader, &mut writer, &temp_file_path)?;
 
-        let target_file = self.project.blobs().join(&hash);
+        let target_file = self.repo.blobs().join(&hash);
 
         if target_file.is_file() {
             // if the blob already exists, we just remove the newly created temp file
@@ -80,7 +80,7 @@ impl BlobMgr {
 
     /// Returns the blob content reader based on it's hash
     pub fn get_blob_reader<S: Into<String>>(&self, hash: S) -> DitResult<BufReader<File>> {
-        let path = self.project.blobs().join(hash.into());
+        let path = self.repo.blobs().join(hash.into());
         let reader = get_buf_reader(&path)?;
         Ok(reader)
     }

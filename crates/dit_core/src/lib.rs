@@ -1,12 +1,11 @@
-mod blob;
-mod commit;
-mod constants;
-mod dit_project;
-mod stage;
-mod tree;
-mod branch;
+mod managers;
+use managers::{blob, tree, commit, stage, branch};
 
-pub use constants::DIT_ROOT;
+mod project_structure;
+
+mod repo;
+
+pub use project_structure::DIT_ROOT;
 pub mod errors;
 pub mod dit;
 pub mod helpers;

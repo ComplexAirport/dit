@@ -1,13 +1,13 @@
-﻿use crate::constants::*;
+﻿use crate::project_structure::*;
 use crate::errors::{DitResult, ProjectError};
 use crate::helpers::resolve_absolute_path;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
-/// Stores paths of the components of the dit project
-pub struct DitProject {
-    /// Represents the path of the project (where `.dit` is located)
-    project_path: PathBuf,
+/// Stores paths of the components of the dit repository
+pub struct Repo {
+    /// Represents the path of the repository (where `.dit` is located)
+    repo_path: PathBuf,
 
     /// [`DIT_ROOT`]
     dit_root: PathBuf,
@@ -35,8 +35,8 @@ pub struct DitProject {
 }
 
 /// Constructor
-impl DitProject {
-    /// Ensures all dir project components are created
+impl Repo {
+    /// Ensures all .dit components are created
     pub fn init<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
         let project_path = project_path.as_ref().to_path_buf();
 
@@ -71,7 +71,7 @@ impl DitProject {
         Self::init_sub_file(&head_file)?;
 
         Ok(Self {
-            project_path,
+            repo_path: project_path,
             dit_root,
             blobs_root,
             trees_root,
@@ -107,10 +107,10 @@ impl DitProject {
 }
 
 /// API
-impl DitProject {
+impl Repo {
     /// Returns the project path where the `.dit` is located
-    pub fn project_path(&self) -> &Path {
-        &self.project_path
+    pub fn repo_path(&self) -> &Path {
+        &self.repo_path
     }
 
     /// Returns the [`DIT_ROOT`] path
@@ -170,7 +170,7 @@ impl DitProject {
         let path = path.as_ref();
         if self.includes_path(path) {
             Ok(path
-                .strip_prefix(self.project_path())
+                .strip_prefix(self.repo_path())
                 .unwrap()
                 .to_path_buf())
         } else {
@@ -184,7 +184,7 @@ impl DitProject {
         if !path.exists() {
             return false;
         }
-        let abs_project_path = resolve_absolute_path(self.project_path()).unwrap();
+        let abs_project_path = resolve_absolute_path(self.repo_path()).unwrap();
         let abs_path = resolve_absolute_path(path).unwrap();
         abs_path.starts_with(abs_project_path)
     }

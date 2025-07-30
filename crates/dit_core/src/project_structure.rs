@@ -1,9 +1,4 @@
-﻿/// Represents the maximum size of the buffer when reading/writing/hashing files \
-/// Larger value means more bytes loaded into the RAM during I/O
-/// todo: load from environmental variable
-pub const BUFFER_SIZE: usize = 32768;
-
-/// Represents the root dit directory, where all dit-related data
+﻿/// Represents the root dit directory, where all dit-related data
 /// (blobs, trees, commits, etc.) is stored
 pub const DIT_ROOT: &str = ".dit";
 
@@ -27,6 +22,3 @@ pub const STAGE_FILE: &str = ".dit/stage/staged_files";
 
 /// Represents a file where the current branch is stored
 pub const HEAD_FILE: &str = ".dit/head";
-
-/// Represents the name of the default branch
-pub const DEFAULT_BRANCH: &str = "main";

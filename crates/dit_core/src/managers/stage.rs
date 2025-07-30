@@ -16,7 +16,7 @@
 //! location of the copied file in the temporary "buffer" zone. This way,
 //! when a commit happens, the system knows where to find the staged file content.
 
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::helpers::{
     get_buf_reader,
     get_buf_writer,
@@ -34,15 +34,15 @@ use uuid::Uuid;
 
 /// Manages the staged files. See [`crate::stage`] for more info
 pub struct StageMgr {
-    project: Rc<DitProject>,
+    repo: Rc<Repo>,
 
     staged_files: StagedFiles,
 }
 
 impl StageMgr {
-    pub fn from(project: Rc<DitProject>) -> DitResult<Self> {
+    pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
         let mut mgr = Self {
-            project,
+            repo,
             staged_files: StagedFiles::new(),
         };
         Self::load_stage_file(&mut mgr)?;
@@ -57,12 +57,12 @@ impl StageMgr {
 impl StageMgr {
     /// Stages a file based on its path
     pub fn stage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
-        let file_path = self.project.get_relative_path(file_path)?;
+        let file_path = self.repo.get_relative_path(file_path)?;
 
         // generate a unique filename to copy the staged file to
         let write_to = loop {
             let name = format!("file-{}", Uuid::new_v4());
-            let path = self.project.stage().join(name);
+            let path = self.repo.stage().join(name);
             if !path.exists() {
                 break path;
             }
@@ -85,7 +85,7 @@ impl StageMgr {
     /// Unstages a file based on its path
     pub fn unstage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
         let file_path = file_path.as_ref();
-        let relative_path = self.project.get_relative_path(file_path)?;
+        let relative_path = self.repo.get_relative_path(file_path)?;
 
         let staged_path = self.staged_files.files.remove(&relative_path);
 
@@ -100,7 +100,7 @@ impl StageMgr {
 
     /// Clears all staged files and clears the [`STAGE_FILE`]
     ///
-    /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
+    /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     pub fn clear_stage(&mut self) -> DitResult<()> {
         for path in self.staged_files.files.values() {
             remove_file(path)?;
@@ -117,9 +117,9 @@ impl StageMgr {
 
     /// Updates staged files stored in self based on the data in the [`STAGE_FILE`]
     ///
-    /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
+    /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     fn load_stage_file(&mut self) -> DitResult<()> {
-        let path = self.project.stage_file();
+        let path = self.repo.stage_file();
         let serialized = read_to_string(path)?;
 
         let staged_files = if serialized.is_empty() {
@@ -136,9 +136,9 @@ impl StageMgr {
 
     /// Updates the data in the [`STAGE_FILE`] based on staged files stored in self
     ///
-    /// [`STAGE_FILE`]: crate::constants::STAGE_FILE
+    /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     fn update_stage_file(&self) -> DitResult<()> {
-        let path = self.project.stage_file();
+        let path = self.repo.stage_file();
 
         let serialized = serde_json::to_string_pretty(&self.staged_files)
             .map_err(|_| StagingError::SerializationError)?;

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::dit_project::DitProject;
+use crate::repo::Repo;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
 use std::rc::Rc;
@@ -8,7 +8,7 @@ use crate::stage::StageMgr;
 use crate::tree::TreeMgr;
 
 pub struct BranchMgr {
-    project: Rc<DitProject>,
+    repo: Rc<Repo>,
 
     /// Represents the current branch name
     curr_branch: Option<String>,
@@ -19,9 +19,9 @@ pub struct BranchMgr {
 
 /// Constructors
 impl BranchMgr {
-    pub fn from(project: Rc<DitProject>) -> DitResult<Self> {
+    pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
         let mut branch_mgr = Self {
-            project,
+            repo,
             curr_branch: None,
             curr_commit: None,
         };
@@ -123,7 +123,7 @@ impl BranchMgr {
     /// Returns a bool indicating whether the branch exists or not and the path to that branch
     pub fn find_branch<S: AsRef<str>>(&self, name: S) -> (bool, PathBuf) {
         let name = name.as_ref();
-        let path = self.project.branches().join(name);
+        let path = self.repo.branches().join(name);
 
         (path.exists(), path)
     }
@@ -134,9 +134,9 @@ impl BranchMgr {
 impl BranchMgr {
     /// Loads the current branch and(or) commit based on [`HEAD_FILE`]
     ///
-    /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
+    /// [`HEAD_FILE`]: crate::project_structure::HEAD_FILE
     fn load(&mut self) -> DitResult<()> {
-        let path = self.project.head_file();
+        let path = self.repo.head_file();
         let head = read_to_string(path)?;
 
         // if the head starts with ":", then it references a commit and not a branch
@@ -147,7 +147,7 @@ impl BranchMgr {
             self.curr_branch = None;
             self.curr_commit = None;
         } else {
-            let path = self.project.branches().join(&head);
+            let path = self.repo.branches().join(&head);
             let commit = read_to_string(&path)?;
             if commit.is_empty() {
                 self.curr_commit = None;
@@ -162,13 +162,13 @@ impl BranchMgr {
 
     /// Updates the [`HEAD_FILE`] based on the current branch and(or) commit stored in self
     ///
-    /// [`HEAD_FILE`]: crate::constants::HEAD_FILE
+    /// [`HEAD_FILE`]: crate::project_structure::HEAD_FILE
     fn store(&mut self) -> DitResult<()> {
-        let head_file = self.project.head_file();
+        let head_file = self.repo.head_file();
 
         if let Some(curr_branch) = &self.curr_branch {
             write_to_file(head_file, curr_branch)?;
-            let branch_file = self.project.branches().join(curr_branch);
+            let branch_file = self.repo.branches().join(curr_branch);
             match &self.curr_commit {
                 Some(curr_commit) => write_to_file(&branch_file, curr_commit)?,
                 None => write_to_file(&branch_file, "")?,
