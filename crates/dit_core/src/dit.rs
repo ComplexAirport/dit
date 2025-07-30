@@ -103,10 +103,10 @@ impl Dit {
         self.branch_mgr.borrow_mut().switch_branch(
             name,
             is_hard,
+            &mut self.blob_mgr.borrow_mut(),
             &mut self.tree_mgr.borrow_mut(),
             &mut self.commit_mgr.borrow_mut(),
             &mut self.stage_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut(),
         )
     }
 }
@@ -151,26 +151,5 @@ impl Dit {
     /// Returns staged files
     pub fn with_staged_files(&self, f: impl FnOnce(&StagedFiles)) {
         f(self.stage_mgr.borrow().staged_files());
-    }
-}
-
-
-/// Private helpers
-impl Dit {
-    pub fn with_borrowed<F>(&mut self, f: F) -> DitResult<()>
-    where F: FnOnce(
-        &mut BlobMgr,
-        &mut TreeMgr,
-        &mut CommitMgr,
-        &mut StageMgr,
-        &mut BranchMgr) -> DitResult<()>
-    {
-        f(
-            &mut self.blob_mgr.borrow_mut(),
-            &mut self.tree_mgr.borrow_mut(),
-            &mut self.commit_mgr.borrow_mut(),
-            &mut self.stage_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut(),
-        )
     }
 }

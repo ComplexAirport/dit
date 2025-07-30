@@ -1,11 +1,12 @@
 use crate::repo::Repo;
 use crate::errors::{BranchError, DitResult};
-use crate::helpers::{read_to_string, write_to_file};
+use crate::helpers::{clear_dir_except, create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
 use crate::commit::CommitMgr;
 use crate::stage::StageMgr;
 use crate::tree::TreeMgr;
 use std::path::PathBuf;
 use std::rc::Rc;
+use crate::managers::blob::BlobMgr;
 
 pub struct BranchMgr {
     repo: Rc<Repo>,
@@ -70,13 +71,13 @@ impl BranchMgr {
         &mut self,
         name: S,
         is_hard: bool,
+        blob_mgr: &mut BlobMgr,
         tree_mgr: &mut TreeMgr,
         commit_mgr: &mut CommitMgr,
         stage_mgr: &mut StageMgr,
-        branch_mgr: &mut BranchMgr,
     ) -> DitResult<()> {
         let name = name.as_ref();
-        let (exists, path) = branch_mgr.find_branch(name);
+        let (exists, path) = self.find_branch(name);
 
         if !exists {
             return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
@@ -97,10 +98,18 @@ impl BranchMgr {
         let files = tree_mgr.get_tree(target_commit.tree)?.files;
 
         // Remove the current project root
-        // self.clear_root()?;
+        clear_dir_except(self.repo.repo_path(), [".dit"])?; // todo
 
-        // self.branch_mgr.set_head_commit(target_commit_hash)?;
+        for (rel_path, blob_hash) in files {
+            create_file_all(&rel_path)?;
+            let mut blob_reader = blob_mgr.get_blob_reader(blob_hash)?;
+            let mut writer = get_buf_writer(&rel_path)?;
+            transfer_data(&mut blob_reader, &mut writer, rel_path)?;
+        }
 
+        self.set_head_commit(target_commit_hash)?;
+
+        // todo: this definitely needs improvement
         Ok(())
     }
 
