@@ -3,6 +3,9 @@ use crate::dit_project::DitProject;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
 use std::rc::Rc;
+use crate::commit::CommitMgr;
+use crate::stage::StageMgr;
+use crate::tree::TreeMgr;
 
 pub struct BranchMgr {
     project: Rc<DitProject>,
@@ -58,6 +61,45 @@ impl BranchMgr {
 
         self.curr_branch = Some(name.to_string());
         self.store()?;
+
+        Ok(())
+    }
+
+    /// Switches to a different branch
+    pub fn switch_branch<S: AsRef<str>>(
+        &mut self,
+        name: S,
+        is_hard: bool,
+        tree_mgr: &mut TreeMgr,
+        commit_mgr: &mut CommitMgr,
+        stage_mgr: &mut StageMgr,
+        branch_mgr: &mut BranchMgr,
+    ) -> DitResult<()> {
+        let name = name.as_ref();
+        let (exists, path) = branch_mgr.find_branch(name);
+
+        if !exists {
+            return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
+        }
+
+        if stage_mgr.is_staged() {
+            if !is_hard {
+                return Err(BranchError::CannotSwitchBranches(name.to_string()).into());
+            } else {
+                // if the hard mode is set, any staged changes will be cleared
+                stage_mgr.clear_stage()?;
+            }
+        }
+
+        // Get the commit tree
+        let target_commit_hash = read_to_string(path)?;
+        let target_commit = commit_mgr.get_commit(&target_commit_hash)?;
+        let files = tree_mgr.get_tree(target_commit.tree)?.files;
+
+        // Remove the current project root
+        // self.clear_root()?;
+
+        // self.branch_mgr.set_head_commit(target_commit_hash)?;
 
         Ok(())
     }

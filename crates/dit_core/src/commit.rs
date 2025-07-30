@@ -6,14 +6,16 @@
 //! commit, the commit message, etc.
 
 use crate::dit_project::DitProject;
-use crate::stage::StagedFiles;
 use crate::tree::TreeMgr;
+use crate::blob::BlobMgr;
+use crate::branch::BranchMgr;
+use crate::stage::{StageMgr, StagedFiles};
 use crate::errors::{DitResult, CommitError, OtherError, FsError};
+use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::rc::Rc;
 use std::time::SystemTime;
-use crate::blob::BlobMgr;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
@@ -27,10 +29,145 @@ impl CommitMgr {
     }
 }
 
+
 /// Manage commits
 impl CommitMgr {
+    /// Commits the changes given the commit author and the message
+    pub fn create_commit<S1, S2>(
+        &mut self,
+        author: S1,
+        message: S2,
+        blob_mgr: &mut BlobMgr,
+        tree_mgr: &mut TreeMgr,
+        stage_mgr: &mut StageMgr,
+        branch_mgr: &mut BranchMgr,
+    ) -> DitResult<()>
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+    {
+        let parent = branch_mgr.get_head_commit().cloned();
+        let author = author.into();
+        let message = message.into();
+
+        let commit_hash = self.create_commit_inner(
+            author, message, stage_mgr.staged_files(), parent, blob_mgr, tree_mgr
+        )?;
+
+        branch_mgr.set_head_commit(commit_hash)?;
+
+        // Clean up the stage
+        stage_mgr.clear_stage()?;
+
+        Ok(())
+    }
+
+    /// Performs a mixed reset to a specific commit. All files not included in
+    /// that commit tree stay the same.
+    pub fn mixed_reset<S: AsRef<str>>(
+        &mut self,
+        commit: S,
+        blob_mgr: &mut BlobMgr,
+        tree_mgr: &mut TreeMgr,
+        commit_mgr: &mut CommitMgr,
+        branch_mgr: &mut BranchMgr,
+    ) -> DitResult<()> {
+        let commit = commit.as_ref();
+        let head = branch_mgr.get_head_commit().cloned();
+
+        // Check if the commit is reachable
+        if let Some(head) = head {
+            if !commit_mgr.is_parent(commit, &head)? {
+                return Err(
+                    CommitError::UnreachableCommitError(commit.to_string(), head.to_string()).into()
+                );
+            }
+        }
+
+        // Now we know that the commit is reachable.
+        let commit = commit_mgr.get_commit(commit)?;
+        let tree = tree_mgr.get_tree(commit.tree)?;
+        let files = tree.files;
+
+        for (rel_path, blob_hash) in files {
+            let mut reader = blob_mgr.get_blob_reader(blob_hash)?;
+
+            let abs_path = self.project.get_absolute_path(&rel_path)?;
+            create_file_all(&abs_path)?;
+            let mut writer = get_buf_writer(&abs_path)?;
+
+            transfer_data(&mut reader, &mut writer, &abs_path)?;
+        }
+
+        branch_mgr.set_head_commit(commit.hash)?;
+
+        Ok(())
+    }
+}
+
+
+/// Getters
+impl CommitMgr {
+    /// Returns a commit by hash
+    pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
+        self.load_commit(hash)
+    }
+
+    /// Checks whether a commit is a direct or indirect parent to another commit. This basically
+    /// checks if the parent commit is reachable from the child commit.
+    pub fn is_parent<S1, S2>(&self, parent: S1, child: S2)
+                             -> DitResult<bool>
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
+        let parent = parent.as_ref();
+        let child = child.as_ref();
+
+        let mut current = Some(child.to_string());
+        while let Some(head) = current {
+            let commit = self.get_commit(head)?;
+            if commit.hash == parent {
+                return Ok(true);
+            }
+            current = commit.parent;
+        }
+
+        Ok(false)
+    }
+}
+
+
+/// Private helper methods
+impl CommitMgr {
+    /// Writes the given commit to the commits directory
+    fn write_commit(&self, commit: &Commit) -> DitResult<()> {
+        let serialized = serde_json::to_string_pretty(&commit)
+            .map_err(|_| CommitError::SerializationError(commit.hash.clone()))?;
+
+        let path = self.project.commits().join(&commit.hash);
+        std::fs::write(&path, &serialized)
+            .map_err(|_| FsError::FileWriteError(path.display().to_string()))?;
+        Ok(())
+    }
+
+    /// Reads and returns a commit given the commit's hash
+    fn load_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
+        let hash = hash.as_ref();
+        let path = self.project.commits().join(hash);
+
+        let serialized = std::fs::read_to_string(&path)
+            .map_err(|_| FsError::FileReadError(path.display().to_string()))?;
+
+        let mut commit: Commit = serde_json::from_str(&serialized)
+            .map_err(|_| CommitError::DeserializationError(hash.to_string()))?;
+
+        commit.hash = hash.to_string();
+        Ok(commit)
+    }
+
     /// Creates a commit and returns the commit hash
-    pub fn create_commit(
+    fn create_commit_inner(
         &self,
         author: String,
         message: String,
@@ -74,65 +211,8 @@ impl CommitMgr {
 
         Ok(commit_hash)
     }
-
-
-    /// Returns a commit by hash
-    pub fn get_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
-        self.load_commit(hash)
-    }
-
-    /// Checks whether a commit is a direct or indirect parent to another commit. This basically
-    /// checks if the parent commit is reachable from the child commit.
-    pub fn is_parent<S1, S2>(&self, parent: S1, child: S2)
-        -> DitResult<bool>
-    where
-        S1: AsRef<str>,
-        S2: AsRef<str>,
-    {
-        let parent = parent.as_ref();
-        let child = child.as_ref();
-
-        let mut current = Some(child.to_string());
-        while let Some(head) = current {
-            let commit = self.get_commit(head)?;
-            if commit.hash == parent {
-                return Ok(true);
-            }
-            current = commit.parent;
-        }
-
-        Ok(false)
-    }
 }
 
-/// Private helper methods
-impl CommitMgr {
-    /// Writes the given commit to the commits directory
-    fn write_commit(&self, commit: &Commit) -> DitResult<()> {
-        let serialized = serde_json::to_string_pretty(&commit)
-            .map_err(|_| CommitError::SerializationError(commit.hash.clone()))?;
-
-        let path = self.project.commits().join(&commit.hash);
-        std::fs::write(&path, &serialized)
-            .map_err(|_| FsError::FileWriteError(path.display().to_string()))?;
-        Ok(())
-    }
-
-    /// Reads and returns a commit given the commit's hash
-    fn load_commit<S: AsRef<str>>(&self, hash: S) -> DitResult<Commit> {
-        let hash = hash.as_ref();
-        let path = self.project.commits().join(hash);
-
-        let serialized = std::fs::read_to_string(&path)
-            .map_err(|_| FsError::FileReadError(path.display().to_string()))?;
-
-        let mut commit: Commit = serde_json::from_str(&serialized)
-            .map_err(|_| CommitError::DeserializationError(hash.to_string()))?;
-
-        commit.hash = hash.to_string();
-        Ok(commit)
-    }
-}
 
 /// Represents a commit object
 #[derive(Debug, Clone, Serialize, Deserialize)]
