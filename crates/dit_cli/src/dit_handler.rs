@@ -138,7 +138,6 @@ impl DitHandler {
         let dit = self.get_dit();
         let branch_name = dit.branch();
         let head_commit = dit.head_commit();
-        let staged_files = dit.staged_files()?;
 
         if let Some(branch_name) = branch_name {
             println!("On branch '{branch_name}'")
@@ -152,14 +151,16 @@ impl DitHandler {
             println!("No commits yet");
         }
 
-        if !staged_files.files.is_empty() {
-            println!("Changes to be committed: ");
-            for path in staged_files.files.keys() {
-                println!("    {}", path.display());
+        dit.with_staged_files(|staged_files| {
+            if !staged_files.files.is_empty() {
+                println!("Changes to be committed: ");
+                for path in staged_files.files.keys() {
+                    println!("    {}", path.display());
+                }
+            } else {
+                println!();
             }
-        } else {
-            println!();
-        }
+        });
 
         Ok(())
     }

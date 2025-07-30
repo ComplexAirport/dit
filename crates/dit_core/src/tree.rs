@@ -41,23 +41,22 @@ use std::rc::Rc;
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
     project: Rc<DitProject>,
-
-    /// Represents the blobs manager [`BlobMgr`]
-    pub(crate) blob_mgr: BlobMgr,
 }
 
 /// Constructors
 impl TreeMgr {
     pub fn from(project: Rc<DitProject>) -> Self {
-        let blob_mgr = BlobMgr::from(project.clone());
-        Self { project, blob_mgr }
+        Self { project }
     }
 }
 
 /// API
 impl TreeMgr {
     /// Creates a tree and returns the tree hash
-    pub fn create_tree(&self, staged_files: &StagedFiles, parent_tree_hash: Option<String>)
+    pub fn create_tree(&self,
+                       staged_files: &StagedFiles,
+                       parent_tree_hash: Option<String>,
+                       blob_mgr: &mut BlobMgr)
         -> DitResult<String>
     {
         // we will operate on the collection of files sorted by their relative paths
@@ -71,7 +70,7 @@ impl TreeMgr {
         };
 
         for (relative_path, staged_path) in &staged_files.files {
-            let blob_hash = self.blob_mgr.create_blob(staged_path)?;
+            let blob_hash = blob_mgr.create_blob(staged_path)?;
             files.insert(relative_path.clone(), blob_hash);
         }
 

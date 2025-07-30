@@ -13,20 +13,17 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::rc::Rc;
 use std::time::SystemTime;
+use crate::blob::BlobMgr;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
     project: Rc<DitProject>,
-
-    /// Represents the tree manager [`TreeMgr`]
-    pub(crate) tree_mgr: TreeMgr,
 }
 
 /// Constructors
 impl CommitMgr {
     pub fn from(project: Rc<DitProject>) -> Self {
-        let tree_mgr = TreeMgr::from(project.clone());
-        Self { project, tree_mgr }
+        Self { project }
     }
 }
 
@@ -39,6 +36,8 @@ impl CommitMgr {
         message: String,
         staged_files: &StagedFiles,
         parent_commit_hash: Option<String>,
+        blob_mgr: &mut BlobMgr,
+        tree_mgr: &mut TreeMgr,
     ) -> DitResult<String> {
         let parent_tree_hash = if let Some(parent_commit_hash) = &parent_commit_hash {
             let parent_commit = self.get_commit(parent_commit_hash)?;
@@ -47,7 +46,7 @@ impl CommitMgr {
             None
         };
 
-        let tree_hash = self.tree_mgr.create_tree(staged_files, parent_tree_hash)?;
+        let tree_hash = tree_mgr.create_tree(staged_files, parent_tree_hash, blob_mgr)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
