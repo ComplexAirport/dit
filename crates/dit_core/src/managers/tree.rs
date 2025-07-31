@@ -32,7 +32,7 @@ use crate::repo::Repo;
 use crate::stage::StagedFiles;
 use crate::errors::{DitResult, TreeError};
 use crate::helpers::{create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
-use serde::{Deserialize, Serialize};
+use crate::models::Tree;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -94,11 +94,8 @@ impl TreeMgr {
     pub fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
         let path = self.repo.trees().join(tree_hash.clone());
 
-        let serialized = read_to_string(&path)?;
-
-        let tree: Tree = serde_json::from_str(&serialized)
-            .map_err(|_| TreeError::DeserializationError(tree_hash))?;
-
+        let tree: Tree = Tree::read_from(path)?;
+        
         Ok(tree)
     }
 
@@ -126,29 +123,11 @@ impl TreeMgr {
         
         Ok(())
     }
-}
 
-/// Private helper methods
-impl TreeMgr {
     /// Writes the tree to the trees directory
     fn write_tree(&self, tree: &Tree) -> DitResult<()> {
-        let serialized = serde_json::to_string(&tree)
-            .map_err(|_| TreeError::SerializationError(tree.hash.clone()))?;
-
         let path = self.repo.trees().join(tree.hash.clone());
-        write_to_file(&path, &serialized)?;
-
+        tree.write_to(path)?;
         Ok(())
     }
-}
-
-/// Represents the tree object
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tree {
-    /// Maps the relative file paths to corresponding blob hashes
-    pub files: BTreeMap<PathBuf, String>,
-
-    /// Represents the tree hash
-    #[serde(skip)]
-    pub hash: String,
 }

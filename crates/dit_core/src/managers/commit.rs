@@ -12,7 +12,7 @@ use crate::branch::BranchMgr;
 use crate::stage::{StageMgr, StagedFiles};
 use crate::errors::{DitResult, CommitError, OtherError, FsError};
 use crate::helpers::clear_dir_except;
-use serde::{Deserialize, Serialize};
+use crate::models::Commit;
 use sha2::{Digest, Sha256};
 use std::rc::Rc;
 use std::time::SystemTime;
@@ -147,12 +147,8 @@ impl CommitMgr {
 impl CommitMgr {
     /// Writes the given commit to the commits directory
     fn write_commit(&self, commit: &Commit) -> DitResult<()> {
-        let serialized = serde_json::to_string_pretty(&commit)
-            .map_err(|_| CommitError::SerializationError(commit.hash.clone()))?;
-
         let path = self.repo.commits().join(&commit.hash);
-        std::fs::write(&path, &serialized)
-            .map_err(|_| FsError::FileWriteError(path.display().to_string()))?;
+        commit.write_to(path)?;
         Ok(())
     }
 
@@ -161,13 +157,10 @@ impl CommitMgr {
         let hash = hash.as_ref();
         let path = self.repo.commits().join(hash);
 
-        let serialized = std::fs::read_to_string(&path)
-            .map_err(|_| FsError::FileReadError(path.display().to_string()))?;
-
-        let mut commit: Commit = serde_json::from_str(&serialized)
-            .map_err(|_| CommitError::DeserializationError(hash.to_string()))?;
+        let mut commit = Commit::read_from(path)?;
 
         commit.hash = hash.to_string();
+
         Ok(commit)
     }
 
@@ -216,31 +209,4 @@ impl CommitMgr {
 
         Ok(commit_hash)
     }
-}
-
-
-/// Represents a commit object
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Commit {
-    /// Represents the committer name and email address \
-    /// Example: "Alice | alice@example.com"
-    pub author: String,
-
-    /// Represents the commit message \
-    /// Example: "initial commit"
-    pub message: String,
-
-    /// Represents the commit time as a Unix timestamp - number of seconds
-    /// since January 1, 1970 (UTC)
-    pub timestamp: u64,
-
-    /// Represents the tree hash of this commit
-    pub tree: String,
-
-    /// Represents the hash of the parent commit (the hash of the commit which preceded this commit)
-    pub parent: Option<String>,
-
-    /// Represents the commit hash
-    #[serde(skip)]
-    pub hash: String,
 }

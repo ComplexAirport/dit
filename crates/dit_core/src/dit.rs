@@ -1,6 +1,7 @@
 ﻿//! This module provides the API to work with the Dit version control system
 
-use crate::commit::{Commit, CommitMgr};
+use crate::commit::CommitMgr;
+use crate::models::Commit;
 use crate::stage::{StageMgr, StagedFiles};
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;

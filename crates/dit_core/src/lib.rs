@@ -5,6 +5,8 @@ mod project_structure;
 
 mod repo;
 
+mod models;
+
 pub use project_structure::DIT_ROOT;
 pub mod errors;
 pub mod dit;
