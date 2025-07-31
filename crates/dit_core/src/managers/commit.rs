@@ -11,7 +11,7 @@ use crate::blob::BlobMgr;
 use crate::branch::BranchMgr;
 use crate::stage::{StageMgr, StagedFiles};
 use crate::errors::{DitResult, CommitError, OtherError, FsError};
-use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
+use crate::helpers::clear_dir_except;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::rc::Rc;
@@ -62,42 +62,47 @@ impl CommitMgr {
         Ok(())
     }
 
-    /// Performs a mixed reset to a specific commit. All files not included in
-    /// that commit tree stay the same.
+    /// Performs a soft reset to a specific commit. Only changes the head
+    pub fn soft_reset<S: AsRef<str>>(
+        &mut self,
+        commit: S,
+        branch_mgr: &mut BranchMgr,
+    ) -> DitResult<()> {
+        let commit = self.get_commit(commit.as_ref())?;
+        branch_mgr.set_head_commit(commit.hash)?;
+        Ok(())
+    }
+
+    /// Performs a mixed reset to a specific commit. Mixed reset means that the files
+    /// not included in that commit tree stay the same.
     pub fn mixed_reset<S: AsRef<str>>(
         &mut self,
         commit: S,
         blob_mgr: &mut BlobMgr,
         tree_mgr: &mut TreeMgr,
-        commit_mgr: &mut CommitMgr,
         branch_mgr: &mut BranchMgr,
     ) -> DitResult<()> {
-        let commit = commit.as_ref();
-        let head = branch_mgr.get_head_commit().cloned();
+        let commit = self.get_commit(commit.as_ref())?;
 
-        // Check if the commit is reachable
-        if let Some(head) = head {
-            if !commit_mgr.is_parent(commit, &head)? {
-                return Err(
-                    CommitError::UnreachableCommitError(commit.to_string(), head.to_string()).into()
-                );
-            }
-        }
+        tree_mgr.recover_tree(commit.tree, blob_mgr)?;
+        branch_mgr.set_head_commit(commit.hash)?;
 
-        // Now we know that the commit is reachable.
-        let commit = commit_mgr.get_commit(commit)?;
-        let tree = tree_mgr.get_tree(commit.tree)?;
-        let files = tree.files;
+        Ok(())
+    }
 
-        for (rel_path, blob_hash) in files {
-            let mut reader = blob_mgr.get_blob_reader(blob_hash)?;
+    pub fn hard_reset<S: AsRef<str>>(
+        &mut self,
+        commit: S,
+        blob_mgr: &mut BlobMgr,
+        tree_mgr: &mut TreeMgr,
+        branch_mgr: &mut BranchMgr,
+    ) -> DitResult<()> {
+        let commit = self.get_commit(commit.as_ref())?;
 
-            let abs_path = self.repo.get_absolute_path(&rel_path)?;
-            create_file_all(&abs_path)?;
-            let mut writer = get_buf_writer(&abs_path)?;
+        // Clear the project directory to recover the target commit tree
+        clear_dir_except(self.repo.repo_path(), self.repo.ignore())?;
 
-            transfer_data(&mut reader, &mut writer, &abs_path)?;
-        }
+        tree_mgr.recover_tree(commit.tree, blob_mgr)?;
 
         branch_mgr.set_head_commit(commit.hash)?;
 

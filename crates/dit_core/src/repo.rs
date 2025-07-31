@@ -8,30 +8,15 @@ use std::path::{Path, PathBuf};
 pub struct Repo {
     /// Represents the path of the repository (where `.dit` is located)
     repo_path: PathBuf,
-
-    /// [`DIT_ROOT`]
     dit_root: PathBuf,
-
-    /// [`BLOBS_ROOT`]
     blobs_root: PathBuf,
-
-    /// [`TREES_ROOT`]
     trees_root: PathBuf,
-
-    /// [`STAGE_ROOT`]
     stage_root: PathBuf,
-
-    /// [`STAGE_FILE`]
     stage_file: PathBuf,
-
-    /// [`COMMITS_ROOT`]
     commits_root: PathBuf,
-
-    /// [`BRANCHES_ROOT`]
     branches_root: PathBuf,
-
-    /// [`HEAD_FILE`]
     head_file: PathBuf,
+    ignore: Vec<PathBuf>,
 }
 
 /// Constructor
@@ -80,6 +65,7 @@ impl Repo {
             commits_root,
             branches_root,
             head_file,
+            ignore: vec![PathBuf::from(".dit"), PathBuf::from("dit.exe")],
         })
     }
 
@@ -153,6 +139,8 @@ impl Repo {
         &self.head_file
     }
 
+    pub fn ignore(&self) -> &Vec<PathBuf> { &self.ignore }
+
     /// Returns the absolute path of a given relative path in the project
     pub fn get_absolute_path<P: AsRef<Path>>(&self, relative_path: P) -> DitResult<PathBuf> {
         let path = relative_path.as_ref();
@@ -161,6 +149,12 @@ impl Repo {
         } else {
             Err(ProjectError::FileNotInProject(path.display().to_string()).into())
         }
+    }
+
+    /// Returns the absolute path of a given relative path which is guaranteed
+    /// to be a correct relative path by the user
+    pub fn get_absolute_path_unchecked<P: AsRef<Path>>(&self, relative_path: P) -> PathBuf {
+        self.repo_path.join(relative_path)
     }
 
     /// Returns the path of a given path relative to the project path. \

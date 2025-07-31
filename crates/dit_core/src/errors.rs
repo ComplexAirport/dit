@@ -124,6 +124,12 @@ pub enum ProjectError {
 /// General filesystem related errors
 #[derive(Error, Debug)]
 pub enum FsError {
+    #[error("Failed to read glob pattern: '{0}'")]
+    GlobPatternError(String),
+
+    #[error("Glob iteration error: '{0}'")]
+    GlobIterError(String),
+
     #[error("File '{0}' not found")]
     FileNotFoundError(String),
 

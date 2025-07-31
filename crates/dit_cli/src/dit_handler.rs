@@ -218,9 +218,16 @@ impl DitHandler {
                 println!("[+] Mixed reset to commit '{commit}'");
             },
 
-            _ => {
-                println!("[-] This reset mode is not supported yet :(")
+            ResetMode::Hard => {
+                dit.hard_reset(&commit)?;
+                println!("[+] Hard reset to commit '{commit}'");
+            },
+
+            ResetMode::Soft => {
+                dit.soft_reset(&commit)?;
+                println!("[+] Soft reset to commit '{commit}'");
             }
+
         }
         Ok(())
     }

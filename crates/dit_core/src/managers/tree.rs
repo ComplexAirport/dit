@@ -31,7 +31,7 @@ use crate::blob::BlobMgr;
 use crate::repo::Repo;
 use crate::stage::StagedFiles;
 use crate::errors::{DitResult, TreeError};
-use crate::helpers::{read_to_string, write_to_file};
+use crate::helpers::{create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -100,6 +100,31 @@ impl TreeMgr {
             .map_err(|_| TreeError::DeserializationError(tree_hash))?;
 
         Ok(tree)
+    }
+
+    /// Recovers a tree given a [`Tree`] (writes all files to the project root)
+    ///
+    /// Note: files not included in the [`Tree`] will remain unchanged
+    pub fn recover_tree(
+        &self,
+        tree_hash: String,
+        blob_mgr: &mut BlobMgr)
+        -> DitResult<()>
+    {
+        let tree = self.get_tree(tree_hash)?;
+        let files = tree.files;
+
+        for (rel_path, blob_hash) in files {
+            let mut reader = blob_mgr.get_blob_reader(blob_hash)?;
+
+            let abs_path = self.repo.get_absolute_path_unchecked(rel_path);
+            create_file_all(&abs_path)?;
+            let mut writer = get_buf_writer(&abs_path)?;
+
+            transfer_data(&mut reader, &mut writer, &abs_path)?;
+        }
+        
+        Ok(())
     }
 }
 
