@@ -30,8 +30,8 @@
 use crate::blob::BlobMgr;
 use crate::repo::Repo;
 use crate::stage::StagedFiles;
-use crate::errors::{DitResult, TreeError};
-use crate::helpers::{create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
+use crate::errors::DitResult;
+use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
 use crate::models::Tree;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;

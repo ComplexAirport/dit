@@ -10,7 +10,7 @@ use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::branch::BranchMgr;
 use crate::stage::{StageMgr, StagedFiles};
-use crate::errors::{DitResult, CommitError, OtherError, FsError};
+use crate::errors::{DitResult, OtherError};
 use crate::helpers::clear_dir_except;
 use crate::models::Commit;
 use sha2::{Digest, Sha256};

@@ -1,4 +1,4 @@
-﻿use crate::errors::{CommitError, DitResult, TreeError};
+﻿use crate::errors::{CommitError, DitResult};
 use crate::helpers::{read_to_string, write_to_file};
 use crate::impl_read_write_model;
 use serde::{Deserialize, Serialize};
