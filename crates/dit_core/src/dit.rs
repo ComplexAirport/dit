@@ -113,7 +113,7 @@ impl Dit {
 impl Dit {
     /// Creates a new branch
     pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
-        self.branch_mgr.borrow_mut().create_branch(name)
+        self.branch_mgr.borrow_mut().create_branch(name, &mut self.stage_mgr.borrow_mut())
     }
 
     /// Switches to a different branch

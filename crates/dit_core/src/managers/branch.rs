@@ -38,7 +38,11 @@ impl BranchMgr {
     /// Creates a new branch based on the given name
     ///
     /// Returns an error if a branch with a such name already exists
-    pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
+    pub fn create_branch<S: AsRef<str>>(
+        &mut self,
+        name: S,
+        stage_mgr: &mut StageMgr,
+    ) -> DitResult<()> {
         let name = name.as_ref();
 
         if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
@@ -50,6 +54,8 @@ impl BranchMgr {
             return Err(BranchError::BranchAlreadyExists(name.to_string()).into())
         }
 
+        self.prepare_stage_for_switch_soft(name, stage_mgr)?;
+
         match &self.curr_commit {
             None => {
                 write_to_file(&path, "")?;
@@ -59,9 +65,6 @@ impl BranchMgr {
                 write_to_file(&path, curr_commit)?;
             }
         }
-
-        self.curr_branch = Some(name.to_string());
-        self.store()?;
 
         Ok(())
     }
@@ -83,13 +86,10 @@ impl BranchMgr {
             return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
         }
 
-        if stage_mgr.is_staged() {
-            if !is_hard {
-                return Err(BranchError::CannotSwitchBranches(name.to_string()).into());
-            } else {
-                // if the hard mode is set, any staged changes will be cleared
-                stage_mgr.clear_stage()?;
-            }
+        if is_hard {
+            self.prepare_stage_for_switch_hard(stage_mgr)?;
+        } else {
+            self.prepare_stage_for_switch_soft(name, stage_mgr)?;
         }
 
         // Get the commit tree
@@ -184,11 +184,35 @@ impl BranchMgr {
             }
         } else {
             match &self.curr_commit {
-                Some(head) => write_to_file(head_file, format!(":{}", head))?,
+                Some(head) => write_to_file(head_file, format!(":{head}"))?,
                 None => write_to_file(head_file, "")?,
             }
         }
 
         Ok(())
+    }
+
+    /// Resets the stage if it's not empty
+    fn prepare_stage_for_switch_hard(&self, stage_mgr: &mut StageMgr) -> DitResult<()>
+    {
+        if stage_mgr.is_staged() {
+            stage_mgr.clear_stage()?;
+        }
+        Ok(())
+    }
+
+    /// If the stage is not empty, returns an error. Otherwise, everything is OK.
+    fn prepare_stage_for_switch_soft<S>(
+        &self,
+        switch_to_branch: S,
+        stage_mgr: &mut StageMgr
+    ) -> DitResult<()>
+    where S: Into<String>
+    {
+        if stage_mgr.is_staged() {
+            Err(BranchError::CannotSwitchBranches(switch_to_branch.into()).into())
+        } else {
+            Ok(())
+        }
     }
 }
