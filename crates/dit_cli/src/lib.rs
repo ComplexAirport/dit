@@ -1,3 +1,5 @@
-﻿pub mod cli;
-pub mod dit_handler;
-pub mod error;
+﻿mod cli;
+mod error;
+mod subcommands;
+
+pub use cli::Cli;
