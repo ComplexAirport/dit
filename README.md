@@ -3,13 +3,25 @@
 **Dit** is a minimal version control system inspired by Git.  
 It supports staging, committing, resetting to previous commits, branching, viewing history, etc.
 
+---
 
+## Installation
+
+Clone the repository, chdir into it and run the building script (Note: requires python3
+to be installed on the system)
+```shell
+git clone https://github.com/ComplexAirport/dit.git
+cd dit
+python scripts/build.py  # try 'python3' if 'python' doesn't work
+```
+
+Now, the executable file should appear in the `bin` directory
 
 ---
 
 ## Example workflow
 
-```bash
+```shell
 # 1. Initialise
 dit init
 
