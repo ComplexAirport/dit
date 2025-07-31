@@ -12,7 +12,7 @@ to be installed on the system)
 ```shell
 git clone https://github.com/ComplexAirport/dit.git
 cd dit
-python scripts/build.py  # try 'python3' if 'python' doesn't work
+python scripts/build.py --release  # try 'python3' if 'python' doesn't work
 ```
 
 Now, the executable file should appear in the `bin` directory
