@@ -29,10 +29,9 @@
 
 use crate::blob::BlobMgr;
 use crate::repo::Repo;
-use crate::stage::StagedFiles;
 use crate::errors::DitResult;
 use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
-use crate::models::Tree;
+use crate::models::{Tree, Stage};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -52,9 +51,9 @@ impl TreeMgr {
 
 /// API
 impl TreeMgr {
-    /// Creates a tree and returns the tree hash
+    /// Creates a tree from a stage and returns the tree hash
     pub fn create_tree(&self,
-                       staged_files: &StagedFiles,
+                       staged_files: &Stage,
                        parent_tree_hash: Option<String>,
                        blob_mgr: &mut BlobMgr)
         -> DitResult<String>

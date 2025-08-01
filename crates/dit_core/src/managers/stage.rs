@@ -26,9 +26,8 @@ use crate::helpers::{
     transfer_data,
 };
 use crate::errors::{DitResult, StagingError};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use crate::models::Stage;
+use std::path::Path;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -36,21 +35,21 @@ use uuid::Uuid;
 pub struct StageMgr {
     repo: Rc<Repo>,
 
-    staged_files: StagedFiles,
+    stage: Stage,
 }
 
 impl StageMgr {
     pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
         let mut mgr = Self {
             repo,
-            staged_files: StagedFiles::new(),
+            stage: Stage::new(),
         };
         Self::load_stage_file(&mut mgr)?;
         Ok(mgr)
     }
 
-    pub fn staged_files(&self) -> &StagedFiles {
-        &self.staged_files
+    pub fn stage(&self) -> &Stage {
+        &self.stage
     }
 }
 
@@ -73,7 +72,7 @@ impl StageMgr {
 
         transfer_data(&mut reader, &mut writer, &file_path)?;
 
-        self.staged_files
+        self.stage
             .files
             .insert(file_path.to_path_buf(), write_to);
 
@@ -87,7 +86,7 @@ impl StageMgr {
         let file_path = file_path.as_ref();
         let relative_path = self.repo.get_relative_path(file_path)?;
 
-        let staged_path = self.staged_files.files.remove(&relative_path);
+        let staged_path = self.stage.files.remove(&relative_path);
 
         if let Some(staged_path) = staged_path {
             remove_file(&staged_path)?;
@@ -102,17 +101,17 @@ impl StageMgr {
     ///
     /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     pub fn clear_stage(&mut self) -> DitResult<()> {
-        for path in self.staged_files.files.values() {
+        for path in self.stage.files.values() {
             remove_file(path)?;
         }
-        self.staged_files.files.clear();
+        self.stage.files.clear();
         self.update_stage_file()?;
         Ok(())
     }
 
     /// Checks whether the stage is empty
     pub fn is_staged(&self) -> bool {
-        !self.staged_files.files.is_empty()
+        !self.stage.files.is_empty()
     }
 
     /// Updates staged files stored in self based on the data in the [`STAGE_FILE`]
@@ -123,13 +122,13 @@ impl StageMgr {
         let serialized = read_to_string(path)?;
 
         let staged_files = if serialized.is_empty() {
-            StagedFiles::new()
+            Stage::new()
         } else {
             serde_json::from_str(&serialized)
                 .map_err(|_| StagingError::DeserializationError)?
         };
 
-        self.staged_files = staged_files;
+        self.stage = staged_files;
 
         Ok(())
     }
@@ -140,30 +139,11 @@ impl StageMgr {
     fn update_stage_file(&self) -> DitResult<()> {
         let path = self.repo.stage_file();
 
-        let serialized = serde_json::to_string_pretty(&self.staged_files)
+        let serialized = serde_json::to_string_pretty(&self.stage)
             .map_err(|_| StagingError::SerializationError)?;
 
         write_to_file(path, serialized)?;
 
         Ok(())
-    }
-}
-
-/// This struct represents staged files. \
-/// NOTE: this is later used in [`TreeMgr`] to create trees
-///
-/// [`TreeMgr`]: crate::tree::TreeMgr
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StagedFiles {
-    /// Staged files copied into the staging area and are named using UUID-s
-    /// This field maps the real (project-relative) paths to the staged versions
-    pub files: HashMap<PathBuf, PathBuf>,
-}
-
-impl StagedFiles {
-    pub fn new() -> Self {
-        Self {
-            files: HashMap::new(),
-        }
     }
 }

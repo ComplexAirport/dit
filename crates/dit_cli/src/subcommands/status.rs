@@ -35,7 +35,7 @@ impl HandleSubcommand for StatusSubcommand {
             println!("No commits yet");
         }
 
-        dit.with_staged_files(|staged_files| {
+        dit.with_stage(|staged_files| {
             if !staged_files.files.is_empty() {
                 println!("Changes to be committed: ");
                 for path in staged_files.files.keys() {

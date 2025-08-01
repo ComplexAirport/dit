@@ -9,10 +9,10 @@ use crate::repo::Repo;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::branch::BranchMgr;
-use crate::stage::{StageMgr, StagedFiles};
+use crate::stage::StageMgr;
 use crate::errors::{DitResult, OtherError};
 use crate::helpers::clear_dir_except;
-use crate::models::Commit;
+use crate::models::{Commit, Stage};
 use sha2::{Digest, Sha256};
 use std::rc::Rc;
 use std::time::SystemTime;
@@ -51,7 +51,7 @@ impl CommitMgr {
         let message = message.into();
 
         let commit_hash = self.create_commit_inner(
-            author, message, stage_mgr.staged_files(), parent, blob_mgr, tree_mgr
+            author, message, stage_mgr.stage(), parent, blob_mgr, tree_mgr
         )?;
 
         branch_mgr.set_head_commit(commit_hash)?;
@@ -169,7 +169,7 @@ impl CommitMgr {
         &self,
         author: String,
         message: String,
-        staged_files: &StagedFiles,
+        stage: &Stage,
         parent_commit_hash: Option<String>,
         blob_mgr: &mut BlobMgr,
         tree_mgr: &mut TreeMgr,
@@ -181,7 +181,7 @@ impl CommitMgr {
             None
         };
 
-        let tree_hash = tree_mgr.create_tree(staged_files, parent_tree_hash, blob_mgr)?;
+        let tree_hash = tree_mgr.create_tree(stage, parent_tree_hash, blob_mgr)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)

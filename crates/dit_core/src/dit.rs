@@ -1,8 +1,8 @@
 ﻿//! This module provides the API to work with the Dit version control system
 
 use crate::commit::CommitMgr;
-use crate::models::Commit;
-use crate::stage::{StageMgr, StagedFiles};
+use crate::models::{Commit, Stage};
+use crate::stage::StageMgr;
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
@@ -167,7 +167,7 @@ impl Dit {
     }
 
     /// Returns staged files
-    pub fn with_staged_files(&self, f: impl FnOnce(&StagedFiles)) {
-        f(self.stage_mgr.borrow().staged_files());
+    pub fn with_stage(&self, f: impl FnOnce(&Stage)) {
+        f(self.stage_mgr.borrow().stage());
     }
 }
