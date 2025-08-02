@@ -86,22 +86,7 @@ pub enum TreeError {
 
 /// Errors related to blobs
 #[derive(Error, Debug)]
-pub enum BlobError {
-    #[error("Failed to write the blob '{0}'")]
-    BlobWriteError(String),
-
-    #[error("Failed to read the blob '{0}'")]
-    BlobReadError(String),
-
-    #[error("Failed to create a temporary blob file '{0}'")]
-    TempFileCreationError(String),
-
-    #[error("Failed to delete the temporary blob file '{0}'")]
-    TempFileDeletionError(String),
-
-    #[error("Failed to rename the temporary blob file '{0}' to '{1}'")]
-    TempFileRenameError(String, String),
-}
+pub enum BlobError {}
 
 
 /// General dit project-related errors
@@ -124,12 +109,6 @@ pub enum ProjectError {
 /// General filesystem related errors
 #[derive(Error, Debug)]
 pub enum FsError {
-    #[error("Failed to read glob pattern: '{0}'")]
-    GlobPatternError(String),
-
-    #[error("Glob iteration error: '{0}'")]
-    GlobIterError(String),
-
     #[error("File '{0}' not found")]
     FileNotFoundError(String),
 
@@ -162,6 +141,9 @@ pub enum FsError {
 
     #[error("Failed to create the file '{0}'")]
     FileCreateError(String),
+
+    #[error("Failed to rename the file '{0}' to '{1}'")]
+    FileRenameError(String, String),
 
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),

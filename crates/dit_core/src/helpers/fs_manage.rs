@@ -21,6 +21,7 @@ pub fn remove_dir<P: AsRef<Path>>(path: P) -> DitResult<()> {
         .map_err(|_| FsError::DirRemoveError(path.display().to_string()).into())
 }
 
+
 /// Removes a directory using [`fs::remove_dir_all`] and maps the error to [`FsError`]
 pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
     let path = path.as_ref();
@@ -84,6 +85,23 @@ where
             remove_file(path)?;
         }
     }
+
+    Ok(())
+}
+
+
+/// Renames a file and maps the error to [`FsError`]
+pub fn rename_file<P1, P2>(from: P1, to: P2) -> DitResult<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    let from = from.as_ref();
+    let to = to.as_ref();
+
+    fs::rename(from, to)
+        .map_err(|_| FsError::FileRenameError(
+            from.display().to_string(), to.display().to_string()))?;
 
     Ok(())
 }

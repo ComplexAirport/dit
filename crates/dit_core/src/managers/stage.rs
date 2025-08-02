@@ -19,17 +19,15 @@
 use crate::repo::Repo;
 use crate::helpers::{
     get_buf_reader,
-    get_buf_writer,
     read_to_string,
     remove_file,
     write_to_file,
-    transfer_data,
+    copy_with_hash_as_name,
 };
 use crate::errors::{DitResult, StagingError};
 use crate::models::Stage;
 use std::path::Path;
 use std::rc::Rc;
-use uuid::Uuid;
 
 /// Manages the staged files. See [`crate::stage`] for more info
 pub struct StageMgr {
@@ -54,27 +52,20 @@ impl StageMgr {
 }
 
 impl StageMgr {
-    /// Stages a file based on its path
+    /// Stages a file based on its path. IMPORTANT: files in the
+    /// stage folder have their names as their content hashes.
+    /// This way, the blob hash doesn't have to be recomputed
+    /// when the file is commited
     pub fn stage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
         let file_path = self.repo.get_relative_path(file_path)?;
+        let reader = get_buf_reader(&file_path)?;
 
-        // generate a unique filename to copy the staged file to
-        let write_to = loop {
-            let name = format!("file-{}", Uuid::new_v4());
-            let path = self.repo.stage().join(name);
-            if !path.exists() {
-                break path;
-            }
-        };
-
-        let mut reader = get_buf_reader(&file_path)?;
-        let mut writer = get_buf_writer(&write_to)?;
-
-        transfer_data(&mut reader, &mut writer, &file_path)?;
+        let hash = copy_with_hash_as_name(reader, self.repo.stage())?;
+        let staged_file_path = self.repo.stage().join(&hash);
 
         self.stage
             .files
-            .insert(file_path.to_path_buf(), write_to);
+            .insert(file_path.to_path_buf(), staged_file_path);
 
         self.update_stage_file()?;
 

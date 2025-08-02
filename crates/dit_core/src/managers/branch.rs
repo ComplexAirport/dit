@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use crate::repo::Repo;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{clear_dir_except, create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
@@ -39,10 +40,8 @@ impl BranchMgr {
     ///
     /// Returns an error if a branch with a such name already exists
     pub fn create_branch<S: AsRef<str>>(
-        &mut self,
-        name: S,
-        stage_mgr: &mut StageMgr,
-    ) -> DitResult<()> {
+        &mut self, name: S)
+        -> DitResult<()> {
         let name = name.as_ref();
 
         if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
@@ -54,8 +53,6 @@ impl BranchMgr {
             return Err(BranchError::BranchAlreadyExists(name.to_string()).into())
         }
 
-        self.prepare_stage_for_switch_soft(name, stage_mgr)?;
-
         match &self.curr_commit {
             None => {
                 write_to_file(&path, "")?;
@@ -65,6 +62,8 @@ impl BranchMgr {
                 write_to_file(&path, curr_commit)?;
             }
         }
+
+        self.set_current_branch(name)?;
 
         Ok(())
     }
@@ -88,14 +87,18 @@ impl BranchMgr {
 
         if is_hard {
             self.prepare_stage_for_switch_hard(stage_mgr)?;
-        } else {
+        } else { // todo: change this behavior?
             self.prepare_stage_for_switch_soft(name, stage_mgr)?;
         }
 
         // Get the commit tree
         let target_commit_hash = read_to_string(path)?;
-        let target_commit = commit_mgr.get_commit(&target_commit_hash)?;
-        let files = tree_mgr.get_tree(target_commit.tree)?.files;
+        let files = if target_commit_hash.is_empty() {
+            BTreeMap::new()
+        } else {
+            let target_commit = commit_mgr.get_commit(&target_commit_hash)?;
+            tree_mgr.get_tree(target_commit.tree)?.files
+        };
 
         // Remove the current project root
         clear_dir_except(self.repo.repo_path(), [".dit"])?; // todo
@@ -110,6 +113,14 @@ impl BranchMgr {
         self.set_head_commit(target_commit_hash)?;
 
         // todo: this definitely needs improvement
+        Ok(())
+    }
+
+    /// Sets the head branch to a new value
+    pub fn set_current_branch<S: AsRef<str>>(&mut self, branch: S) -> DitResult<()> {
+        let branch = branch.as_ref();
+        self.curr_branch = Some(branch.to_string());
+        self.store()?;
         Ok(())
     }
 
@@ -129,7 +140,8 @@ impl BranchMgr {
     /// Returns the hash of the current commit
     pub fn get_head_commit(&self) -> Option<&String> { self.curr_commit.as_ref() }
 
-    /// Returns a bool indicating whether the branch exists or not and the path to that branch
+    /// Returns a bool indicating whether the branch exists or not and
+    /// the path to that branch file
     pub fn find_branch<S: AsRef<str>>(&self, name: S) -> (bool, PathBuf) {
         let name = name.as_ref();
         let path = self.repo.branches().join(name);

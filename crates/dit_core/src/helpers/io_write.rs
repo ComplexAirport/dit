@@ -1,12 +1,12 @@
-﻿use crate::helpers::BUFFER_SIZE;
-use crate::errors::{DitResult, FsError};
+﻿use crate::helpers::{rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
+use crate::helpers::temp_file::create_temp_file;
+use crate::errors::{DitResult, FsError};
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 use sha2::{Digest, Sha256};
-
 
 /// Writes to a file using [`fs::write`] and maps the error to [`FsError`]
 pub fn write_to_file<P: AsRef<Path>, S: AsRef<str>>(path: P, content: S) -> DitResult<()> {
@@ -75,7 +75,8 @@ pub fn transfer_data_hashed<P: AsRef<Path>>(
     Ok(hash)
 }
 
-/// Creates and returns a [`BufWriter`] and maps the error to [`FsError`].
+/// Creates and returns a [`BufWriter`] given a target path and
+/// maps the error to [`FsError`].
 ///
 /// Note: creates the file if it doesn't exist and overrides it if it does
 pub fn get_buf_writer<P: AsRef<Path>>(path: P) -> DitResult<BufWriter<File>> {
@@ -85,3 +86,24 @@ pub fn get_buf_writer<P: AsRef<Path>>(path: P) -> DitResult<BufWriter<File>> {
         .map_err(|_| FsError::FileOpenError(path.display().to_string()).into())
 }
 
+
+/// Copies a file to a new destination and sets the new file's name
+/// as its hash. Returns the hash.
+pub fn copy_with_hash_as_name<P>(mut file: BufReader<File>, dest: P)
+    -> DitResult<String>
+where
+    P: AsRef<Path>,
+{
+    let dest = dest.as_ref();
+
+    let (temp_file, temp_file_path) = create_temp_file(dest)?;
+
+    let mut writer = BufWriter::new(temp_file);
+
+    let hash = transfer_data_hashed(&mut file, &mut writer, &temp_file_path)?;
+    let dest_file = dest.join(&hash);
+
+    rename_file(temp_file_path, dest_file)?;
+
+    Ok(hash)
+}

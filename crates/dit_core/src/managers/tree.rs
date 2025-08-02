@@ -30,7 +30,7 @@
 use crate::blob::BlobMgr;
 use crate::repo::Repo;
 use crate::errors::DitResult;
-use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
+use crate::helpers::{create_file_all, get_buf_writer, rename_file, transfer_data};
 use crate::models::{Tree, Stage};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -53,9 +53,8 @@ impl TreeMgr {
 impl TreeMgr {
     /// Creates a tree from a stage and returns the tree hash
     pub fn create_tree(&self,
-                       staged_files: &Stage,
-                       parent_tree_hash: Option<String>,
-                       blob_mgr: &mut BlobMgr)
+                       stage: &Stage,
+                       parent_tree_hash: Option<String>)
         -> DitResult<String>
     {
         // we will operate on the collection of files sorted by their relative paths
@@ -68,8 +67,14 @@ impl TreeMgr {
             BTreeMap::new()
         };
 
-        for (relative_path, staged_path) in &staged_files.files {
-            let blob_hash = blob_mgr.create_blob(staged_path)?;
+        for (relative_path, temp_blob_path) in &stage.files {
+            let blob_hash = temp_blob_path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+
+            let target_file = self.repo.blobs().join(&blob_hash);
+            rename_file(temp_blob_path, &target_file)?;
             files.insert(relative_path.clone(), blob_hash);
         }
 

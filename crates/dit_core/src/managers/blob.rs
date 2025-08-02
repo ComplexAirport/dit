@@ -26,11 +26,10 @@
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
 use crate::repo::Repo;
-use crate::errors::{DitResult, BlobError};
-use crate::helpers::{get_buf_reader, get_buf_writer, transfer_data_hashed};
+use crate::errors::DitResult;
+use crate::helpers::get_buf_reader;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 /// Manages the blobs in our Dit version control system \
@@ -49,34 +48,15 @@ impl BlobMgr {
 
 /// API
 impl BlobMgr {
-    /// Adds a target file to the blobs and returns the hash
-    pub fn create_blob<P: Into<PathBuf>>(&self, path: P) -> DitResult<String> {
-        let path = path.into();
-
-        let mut reader = get_buf_reader(&path)?;
-
-        let temp_file_path = self.repo.blobs().join(".temp");
-        let mut writer = get_buf_writer(&temp_file_path)?;
-
-        let hash = transfer_data_hashed(&mut reader, &mut writer, &temp_file_path)?;
-
-        let target_file = self.repo.blobs().join(&hash);
-
-        if target_file.is_file() {
-            // if the blob already exists, we just remove the newly created temp file
-            std::fs::remove_file(&temp_file_path)
-                .map_err(|_|
-                    BlobError::TempFileDeletionError(temp_file_path.display().to_string()))?;
-
-        } else {
-            // if it does not exist, we create it by renaming the newly created temp file
-            std::fs::rename(&temp_file_path, &target_file)
-                .map_err(|_| BlobError::TempFileRenameError(
-                    temp_file_path.display().to_string(), target_file.display().to_string()))?;
-        }
-
-        Ok(hash)
-    }
+    // /// Adds a target file to the blobs and returns the hash
+    // pub fn create_blob<P: Into<PathBuf>>(&self, source_file: P) -> DitResult<String> {
+    //     let source_file = source_file.into();
+    //     let reader = get_buf_reader(&source_file)?;
+    //
+    //     let hash = copy_with_hash_as_name(reader, self.repo.blobs())?;
+    //
+    //     Ok(hash)
+    // }
 
     /// Returns the blob content reader based on it's hash
     pub fn get_blob_reader<S: Into<String>>(&self, hash: S) -> DitResult<BufReader<File>> {

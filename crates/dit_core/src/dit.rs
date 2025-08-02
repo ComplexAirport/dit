@@ -51,7 +51,6 @@ impl Dit {
         self.commit_mgr.borrow_mut().create_commit(
             author,
             message,
-            &mut self.blob_mgr.borrow_mut(),
             &mut self.tree_mgr.borrow_mut(),
             &mut self.stage_mgr.borrow_mut(),
             &mut self.branch_mgr.borrow_mut(),
@@ -113,7 +112,7 @@ impl Dit {
 impl Dit {
     /// Creates a new branch
     pub fn create_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
-        self.branch_mgr.borrow_mut().create_branch(name, &mut self.stage_mgr.borrow_mut())
+        self.branch_mgr.borrow_mut().create_branch(name)
     }
 
     /// Switches to a different branch
