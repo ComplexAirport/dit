@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -51,6 +52,9 @@ pub enum BranchError {
 
     #[error("Cannot merge branch '{0}' to branch '{1}' because they have no common ancestors")]
     CannotMergeBranchesWithNoCommonAncestors(String, String),
+
+    #[error("Merge conflicts for files {0:?}")]
+    MergeConflicts(Vec<PathBuf>),
 }
 
 

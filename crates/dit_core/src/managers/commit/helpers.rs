@@ -1,8 +1,9 @@
-use std::collections::{HashSet, VecDeque};
-use crate::errors::DitResult;
 use crate::managers::commit::commit_iterator::CommitIterator;
 use crate::managers::commit::CommitMgr;
-use crate::models::Commit;
+use crate::managers::tree::TreeMgr;
+use crate::models::{Commit, Tree};
+use crate::errors::DitResult;
+use std::collections::{HashSet, VecDeque};
 
 /// Load/write to the commits directory
 impl CommitMgr {
@@ -35,6 +36,17 @@ impl CommitMgr {
     }
 
 
+    /// Returns the tree of a commit by commit hash
+    pub fn get_commit_tree<S: Into<String>>(
+        &self,
+        hash: S,
+        tree_mgr: &TreeMgr
+    ) -> DitResult<Tree> {
+        let commit = self.get_commit(hash)?;
+        let tree = tree_mgr.get_tree(commit.tree)?;
+        Ok(tree)
+    }
+
     /// Returns the parent commit hash of a given commit
     pub fn get_parent<S: Into<String>>(&self, hash: S) -> DitResult<Option<String>> {
         let hash = hash.into();
@@ -59,7 +71,7 @@ impl CommitMgr {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 

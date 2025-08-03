@@ -74,6 +74,40 @@ impl BranchMgr {
     pub fn get_current_branch(&self) -> Option<&String> {
         self.curr_branch.as_ref()
     }
+
+    /// Sets the head of a given branch to a given commit
+    pub fn set_branch_head<S1, S2>(&mut self, branch: S1, commit: S2)
+        -> DitResult<()>
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
+        let branch = branch.as_ref();
+        let commit = commit.as_ref();
+
+        let branch_file = self.repo.branches().join(&branch);
+
+        if branch_file.is_file() {
+            write_to_file(&branch_file, commit)?;
+        }
+        Ok(())
+    }
+
+    /// Returns the head commit of a given branch
+    pub(super) fn get_branch_head<S: AsRef<str>>(&self, name: S) -> DitResult<Option<String>> {
+        let (exists, path) = self.find_branch(name);
+
+        if exists {
+            let content = read_to_string(&path)?;
+            if content.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(content))
+            }
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 
@@ -101,22 +135,5 @@ impl BranchMgr {
         let path = self.repo.branches().join(name);
 
         (path.exists(), path)
-    }
-
-
-    /// Returns the head commit of a given branch
-    pub(super) fn get_head_commit_of_branch<S: AsRef<str>>(&self, name: S) -> DitResult<Option<String>> {
-        let (exists, path) = self.find_branch(name);
-
-        if exists {
-            let content = read_to_string(&path)?;
-            if content.is_empty() {
-                Ok(None)
-            } else {
-                Ok(Some(content))
-            }
-        } else {
-            Ok(None)
-        }
     }
 }
