@@ -1,11 +1,11 @@
-use std::time::SystemTime;
-use sha2::{Digest, Sha256};
-use crate::errors::{DitResult, OtherError};
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::stage::StageMgr;
 use crate::managers::tree::TreeMgr;
+use crate::errors::{DitResult, OtherError};
 use crate::models::{Commit, Stage};
+use sha2::{Digest, Sha256};
+use std::time::SystemTime;
 
 /// Public
 impl CommitMgr {
