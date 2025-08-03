@@ -42,7 +42,7 @@ impl BranchMgr {
         Ok(())
     }
 
-    
+
     /// Switches to a different branch
     pub fn switch_branch<S: AsRef<str>>(
         &mut self,
