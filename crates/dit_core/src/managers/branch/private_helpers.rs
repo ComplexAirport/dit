@@ -1,0 +1,90 @@
+use crate::errors::DitResult;
+use crate::helpers::{read_to_string, write_to_file};
+use crate::managers::branch::BranchMgr;
+use std::path::PathBuf;
+
+/// Load/store from/to the [`HEAD_FILE`]
+///
+/// [`HEAD_FILE`]: crate::project_structure::HEAD_FILE
+impl BranchMgr {
+    /// Loads the current branch and(or) commit based on [`HEAD_FILE`]
+    ///
+    /// [`HEAD_FILE`]: crate::project_structure::HEAD_FILE
+    pub(super) fn load(&mut self) -> DitResult<()> {
+        let path = self.repo.head_file();
+        let head = read_to_string(path)?;
+
+        // if the head starts with ":", then it references a commit and not a branch
+        if let Some(head) = head.strip_prefix(':') {
+            self.curr_commit = Some(head.to_string());
+            self.curr_branch = None;
+        } else if head.is_empty() {
+            self.curr_branch = None;
+            self.curr_commit = None;
+        } else {
+            let path = self.repo.branches().join(&head);
+            let commit = read_to_string(&path)?;
+            if commit.is_empty() {
+                self.curr_commit = None;
+            } else {
+                self.curr_commit = Some(commit);
+            }
+            self.curr_branch = Some(head);
+        }
+
+        Ok(())
+    }
+
+    /// Updates the [`HEAD_FILE`] based on the current branch and(or) commit stored in self
+    ///
+    /// [`HEAD_FILE`]: crate::project_structure::HEAD_FILE
+    pub(super) fn store(&mut self) -> DitResult<()> {
+        let head_file = self.repo.head_file();
+
+        if let Some(curr_branch) = &self.curr_branch {
+            write_to_file(head_file, curr_branch)?;
+            let branch_file = self.repo.branches().join(curr_branch);
+            match &self.curr_commit {
+                Some(curr_commit) => write_to_file(&branch_file, curr_commit)?,
+                None => write_to_file(&branch_file, "")?,
+            }
+        } else {
+            match &self.curr_commit {
+                Some(head) => write_to_file(head_file, format!(":{head}"))?,
+                None => write_to_file(head_file, "")?,
+            }
+        }
+
+        Ok(())
+    }
+}
+
+
+/// Branch getters
+impl BranchMgr {
+    /// Returns a bool indicating whether the branch exists or not and
+    /// the path to that branch file
+    pub(super) fn find_branch<S: AsRef<str>>(&self, name: S) -> (bool, PathBuf) {
+        let name = name.as_ref();
+        let path = self.repo.branches().join(name);
+
+        (path.exists(), path)
+    }
+
+
+    /// Returns the head commit of a given branch
+    pub(super) fn get_head_commit_of_branch<S: AsRef<str>>(&self, name: S) -> DitResult<Option<String>> {
+        let (exists, path) = self.find_branch(name);
+
+        if exists {
+            let content = read_to_string(&path)?;
+            if content.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(content))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+}

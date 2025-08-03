@@ -45,6 +45,12 @@ pub enum BranchError {
     #[error("Cannot switch to branch '{0}' because there are staged changes.
     Commit the changes, stash them or use hard switching.")]
     CannotSwitchBranches(String),
+
+    #[error("Cannot merge to branch '{0}' because the head is in a detached head state.")]
+    CannotMergeToDetachedHead(String),
+
+    #[error("Cannot merge branch '{0}' to branch '{1}' because they have no common ancestors")]
+    CannotMergeBranchesWithNoCommonAncestors(String, String),
 }
 
 
