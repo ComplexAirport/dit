@@ -1,5 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 use crate::errors::DitResult;
+use crate::managers::commit::commit_iterator::CommitIterator;
 use crate::managers::commit::CommitMgr;
 use crate::models::Commit;
 
@@ -33,6 +34,7 @@ impl CommitMgr {
         self.load_commit(hash)
     }
 
+
     /// Returns the parent commit hash of a given commit
     pub fn get_parent<S: Into<String>>(&self, hash: S) -> DitResult<Option<String>> {
         let hash = hash.into();
@@ -40,6 +42,27 @@ impl CommitMgr {
         let commit = Commit::read_from(path)?;
         Ok(commit.parent)
     }
+
+
+    /// Checks whether a commit is an ancestor to another commit
+    pub fn is_ancestor<S1, S2>(&self, ancestor: S1, child: S2) -> DitResult<bool>
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+    {
+        let ancestor = ancestor.into();
+        let child = child.into();
+
+        let commit_iterator = CommitIterator::new(child, self);
+        for commit in commit_iterator {
+            if commit == ancestor {
+                return Ok(true);
+            }
+        }
+        
+        Ok(false)
+    }
+
 
     /// Tries to find a common ancestor for two commits
     pub fn common_ancestor<S1, S2>(&self, a: S1, b: S2) -> DitResult<Option<String>>
