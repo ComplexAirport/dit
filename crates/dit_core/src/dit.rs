@@ -126,6 +126,14 @@ impl Dit {
             &mut self.stage_mgr.borrow_mut(),
         )
     }
+
+    /// Merge a branch into the current branch
+    pub fn merge_branch<S: AsRef<str>>(&mut self, branch: S) -> DitResult<()> {
+        self.branch_mgr.borrow_mut().merge_to(
+            branch,
+            &self.commit_mgr.borrow()
+        )
+    }
 }
 
 

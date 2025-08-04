@@ -17,6 +17,10 @@ pub enum BranchCommand {
 
     Remove {
         name: String,
+    },
+
+    Merge {
+        from: String
     }
 }
 
@@ -35,6 +39,7 @@ impl HandleSubcommand for BranchSubcommand {
             BranchCommand::New { name } => self.handle_new(name),
             BranchCommand::Switch { name, hard } => self.handle_switch(name, *hard),
             BranchCommand::Remove { name } => self.handle_remove(name),
+            BranchCommand::Merge { from } => self.handle_merge(from),
         }
     }
 }
@@ -57,6 +62,13 @@ impl BranchSubcommand {
 
     fn handle_remove(&self, name: &String) -> CliResult<()> {
         eprintln!("[-] Removing branches is not supported yet"); // todo
+        Ok(())
+    }
+
+    fn handle_merge(&self, from: &String) -> CliResult<()> {
+        let mut dit = Self::require_dit()?;
+        dit.merge_branch(from)?;
+        println!("[+] Merged the branch '{from}' into the current branch");
         Ok(())
     }
 }

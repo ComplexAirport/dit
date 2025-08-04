@@ -1,21 +1,19 @@
-use crate::managers::blob::BlobMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
-use crate::managers::tree::TreeMgr;
-use crate::errors::{BranchError, DitCoreError, DitResult};
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use crate::models::Tree;
+use crate::errors::{BranchError, DitResult};
 
 /// Public
 impl BranchMgr {
     /// Merges two branches
-    pub fn merge_to<S: AsRef<str>>(&mut self, merge_to: S) -> DitResult<()> {
+    pub fn merge_to<S: AsRef<str>>(
+        &mut self,
+        merge_to: S,
+        commit_mgr: &CommitMgr,
+    ) -> DitResult<()> {
         let merge_to = merge_to.as_ref();
-        let merge_from = self.curr_branch.as_ref()
+        let merge_from = self.curr_branch.as_ref().cloned()
             .ok_or_else(|| BranchError::CannotMergeToDetachedHead(merge_to.to_string()))?;
-
-        Ok(())
+        self.merge_branches(merge_from, merge_to, commit_mgr)
     }
 }
 
@@ -27,8 +25,6 @@ impl BranchMgr {
         &mut self,
         from: S1,
         to: S2,
-        blob_mgr: &BlobMgr,
-        tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
     ) -> DitResult<()>
     where S1: Into<String>, S2: Into<String> {
@@ -41,7 +37,7 @@ impl BranchMgr {
         // Case 1: Merge BRANCH1 into BRANCH2
         // do nothing, BRANCH2 is already up to date
         if commit_mgr.is_ancestor(&from, &to)? {
-            return Ok(());
+            Ok(())
         }
         // Case 2: Merge BRANCH2 into BRANCH1
         // In this case, simply move the BRANCH1 pointer to point to BRANCH2 head
@@ -51,13 +47,11 @@ impl BranchMgr {
             let merge_from_commit = self.get_branch_head(&from)?
                 .unwrap_or_else(String::new);
             self.set_branch_head(&to, merge_from_commit)?;
-            return Ok(());
+            Ok(())
         }
 
         else {
-            return Err(BranchError::MergeNotSupported.into());
+            Err(BranchError::MergeNotSupported.into())  // todo
         }
-
-        Ok(())
     }
 }
