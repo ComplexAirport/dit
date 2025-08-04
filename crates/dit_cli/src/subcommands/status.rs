@@ -1,6 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
 use clap::Args;
+use console::style;
 
 #[derive(Args)]
 pub struct StatusSubcommand {
@@ -23,16 +24,14 @@ impl HandleSubcommand for StatusSubcommand {
         let branch_name = dit.branch();
         let head_commit = dit.head_commit();
 
-        if let Some(branch_name) = branch_name {
-            println!("On branch '{branch_name}'")
-        } else {
-            println!("No current branch");
+        match branch_name {
+            Some(b) => println!("On branch '{}'", style(b).green().bold()),
+            None => println!("No current branch")
         }
 
-        if let Some(head_commit) = head_commit {
-            println!("Parent commit: '{head_commit}'")
-        } else {
-            println!("No commits yet");
+        match head_commit {
+            Some(h) => println!("Parent commit: '{}'", style(h).yellow().bold()),
+            None => println!("No commits yet")
         }
 
         dit.with_stage(|staged_files| {
