@@ -22,8 +22,8 @@ pub struct Commit {
     /// Represents the tree hash of this commit
     pub tree: String,
 
-    /// Represents the hash of the parent commit (the hash of the commit which preceded this commit)
-    pub parent: Option<String>,
+    /// Represents the hash (or hashes) of the parent commit(s)
+    pub parents: Vec<String>,
 
     /// Represents the commit hash
     #[serde(skip)]

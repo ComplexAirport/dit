@@ -8,10 +8,11 @@ use sha2::{Digest, Sha256};
 
 impl TreeMgr {
     /// Creates a tree from a stage and returns the tree hash
-    pub fn create_tree(&self,
-                       stage: &Stage,
-                       parent_tree_hash: Option<String>)
-                       -> DitResult<String>
+    pub fn create_tree(
+        &self,
+        stage: &Stage,
+        parent_tree_hash: Option<String>
+    ) -> DitResult<String>
     {
         // we will operate on the collection of files sorted by their relative paths
         // this will prevent tree hash inconsistencies across systems and prevent the tree

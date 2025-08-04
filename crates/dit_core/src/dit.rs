@@ -169,7 +169,7 @@ impl Dit {
             }
 
             let commit = self.commit_mgr.borrow().get_commit(head)?;
-            head_commit = commit.parent.clone();
+            head_commit = commit.parents.first().cloned();
             commits.push(commit);
 
             count -= 1;

@@ -71,12 +71,18 @@ impl CommitMgr {
         hasher.update(parent_commit_hash.clone().unwrap_or(String::from('\0')));
         let commit_hash = format!("{:x}", hasher.finalize());
 
+        let parents = if let Some(parent) = parent_commit_hash {
+            vec![parent]
+        } else {
+            vec![]
+        };
+
         let commit = Commit {
             author,
             message,
             timestamp,
             tree: tree_hash,
-            parent: parent_commit_hash,
+            parents,
             hash: commit_hash.clone(),
         };
 
