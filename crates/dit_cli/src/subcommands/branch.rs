@@ -61,7 +61,9 @@ impl BranchSubcommand {
     }
 
     fn handle_remove(&self, name: &String) -> CliResult<()> {
-        eprintln!("[-] Removing branches is not supported yet"); // todo
+        let mut dit = Self::require_dit()?;
+        dit.remove_branch(name)?;
+        println!("[+] Removed the branch '{name}'");
         Ok(())
     }
 

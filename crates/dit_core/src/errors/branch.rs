@@ -16,6 +16,10 @@ pub enum BranchError {
     Commit the changes, stash them or use hard switching.")]
     CannotSwitchBranches(String),
 
+    #[error("Cannot remove the branch which the head is currently on. \
+    Switch to a different branch or commit before removal.")]
+    CannotRemoveBranch,
+
     #[error("Cannot merge to branch '{0}' because the head is in a detached head state.")]
     CannotMergeToDetachedHead(String),
 

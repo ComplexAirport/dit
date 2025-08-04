@@ -134,6 +134,11 @@ impl Dit {
             &self.commit_mgr.borrow()
         )
     }
+
+    /// Removes a given branch
+    pub fn remove_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
+        self.branch_mgr.borrow_mut().remove_branch(name)
+    }
 }
 
 
