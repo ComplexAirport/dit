@@ -1,5 +1,5 @@
 use clap::Parser;
-use dit_cli::Cli;
+use dit_cli::{failure, Cli};
 use std::process::ExitCode;
 
 
@@ -12,7 +12,7 @@ fn main() -> ExitCode {
         Ok(_) => ExitCode::SUCCESS,
 
         Err(e) => {
-            eprintln!("{}", e);
+            failure!("{}", e.to_string());
             ExitCode::FAILURE
         }
     }

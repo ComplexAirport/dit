@@ -3,6 +3,7 @@ use crate::error::CliResult;
 use clap::Args;
 use dit_core::helpers::resolve_absolute_path;
 use std::path::PathBuf;
+use crate::success;
 
 #[derive(Args)]
 pub struct UnstageSubcommand {
@@ -16,7 +17,7 @@ impl HandleSubcommand for UnstageSubcommand {
         for file in &self.files {
             let abs_path = resolve_absolute_path(file)?;
             dit.unstage(&abs_path)?;
-            println!("[+] Unstaged the file `{}`", file.display());
+            success!("Unstaged the file `{}`", file.display());
         }
         Ok(())
     }

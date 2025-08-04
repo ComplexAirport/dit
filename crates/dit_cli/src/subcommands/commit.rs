@@ -1,6 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
 use clap::Args;
+use crate::success;
 
 #[derive(Args)]
 pub struct CommitSubcommand {
@@ -16,7 +17,7 @@ impl HandleSubcommand for CommitSubcommand {
     fn handle(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.commit(&self.author, &self.message)?;
-        println!("[+] Committed the changes");
+        success!("Committed the changes");
         Ok(())
     }
 }

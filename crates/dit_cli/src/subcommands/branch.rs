@@ -1,5 +1,6 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
+use crate::success;
 use clap::{Args, Subcommand};
 
 #[derive(Subcommand)]
@@ -25,7 +26,6 @@ pub enum BranchCommand {
 }
 
 
-
 #[derive(Args)]
 pub struct BranchSubcommand {
     #[command(subcommand)]
@@ -48,29 +48,29 @@ impl HandleSubcommand for BranchSubcommand {
 impl BranchSubcommand {
     fn handle_new(&self, name: &String) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
-        dit.create_branch(&name)?;
-        println!("[+] Created a new branch '{name}'");
+        dit.create_branch(name)?;
+        success!("Created a new branch '{name}'");
         Ok(())
     }
 
     fn handle_switch(&self, name: &String, hard: bool) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
-        dit.switch_branch(&name, hard)?;
-        println!("[+] Switched to branch '{name}'");
+        dit.switch_branch(name, hard)?;
+        success!("Switched to branch '{name}'");
         Ok(())
     }
 
     fn handle_remove(&self, name: &String) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.remove_branch(name)?;
-        println!("[+] Removed the branch '{name}'");
+        success!("Removed the branch '{name}'");
         Ok(())
     }
 
     fn handle_merge(&self, from: &String) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.merge_branch(from)?;
-        println!("[+] Merged the branch '{from}' into the current branch");
+        success!("Merged the branch '{from}' into the current branch");
         Ok(())
     }
 }

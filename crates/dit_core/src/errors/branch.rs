@@ -3,13 +3,13 @@ use thiserror::Error;
 /// Errors related to branches
 #[derive(Error, Debug)]
 pub enum BranchError {
-    #[error("A branch with name '{0}' already exists")]
+    #[error("Branch '{0}' already exists")]
     BranchAlreadyExists(String),
 
-    #[error("A branch with name '{0}' doesn't exists")]
+    #[error("Branch '{0}' doesn't exist")]
     BranchDoesNotExist(String),
 
-    #[error("Invalid branch name '{0}'")]
+    #[error("Invalid branch name: '{0}'")]
     InvalidBranchName(String),
 
     #[error("Cannot switch to branch '{0}' because there are staged changes.

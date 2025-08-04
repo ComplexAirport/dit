@@ -3,12 +3,11 @@ use std::path::{Path, PathBuf};
 use dit_core::dit::Dit;
 use dit_core::DIT_ROOT;
 
-
 pub trait HandleSubcommand {
     fn handle(&self) -> CliResult<()>;
 
     /// If the dit is initialized in the curren directory, returns a [`Dit`] instance.
-    /// Otherwise, prints an error to stderr and exits (todo)
+    /// Otherwise, prints an error to stderr and exits
     fn require_dit() -> CliResult<Dit> {
         let cwd = std::env::current_dir()
             .map_err(|_| DitCliError::CwdError)?;

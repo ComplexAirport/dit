@@ -1,5 +1,6 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
+use crate::success;
 use clap::{Args, ValueEnum};
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -32,21 +33,21 @@ impl ResetSubcommand {
     fn handle_soft(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.mixed_reset(&self.commit)?;
-        println!("[+] Mixed reset to commit '{}'", &self.commit);
+        success!("Soft reset to commit '{}'", &self.commit);
         Ok(())
     }
 
     fn handle_mixed(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.mixed_reset(&self.commit)?;
-        println!("[+] Mixed reset to commit '{}'", &self.commit);
+        success!("Mixed reset to commit '{}'", &self.commit);
         Ok(())
     }
 
     fn handle_hard(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.hard_reset(&self.commit)?;
-        println!("[+] Hard reset to commit '{}'", &self.commit);
+        success!("Hard reset to commit '{}'", &self.commit);
         Ok(())
     }
 }

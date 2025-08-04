@@ -3,6 +3,7 @@ use crate::error::{CliResult, DitCliError};
 use clap::Args;
 use dit_core::dit::Dit;
 use dit_core::DIT_ROOT;
+use crate::success;
 
 #[derive(Args)]
 pub struct InitSubcommand;
@@ -25,9 +26,9 @@ impl HandleSubcommand for InitSubcommand {
         }
 
         if is_new {
-            println!("[+] Initialized a new dit directory in '{}'.", cwd.display());
+            success!("Initialized a new dit directory in '{}'.", cwd.display());
         } else {
-            println!("[+] Reinitialized the existing dit directory in '{}'.", cwd.display());
+            success!("Reinitialized the existing dit directory in '{}'.", cwd.display());
         }
 
         Ok(())
