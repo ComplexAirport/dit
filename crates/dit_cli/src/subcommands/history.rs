@@ -1,5 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
+use chrono::{DateTime, Local, TimeZone, Utc};
+use comfy_table::{presets::UTF8_FULL, Table, ContentArrangement};
 use clap::Args;
 
 #[derive(Args)]
@@ -18,19 +20,42 @@ impl HandleSubcommand for HistorySubcommand {
 
         let branch_name = dit.branch();
         let commits = dit.history(self.count)?;
-
-        if let Some(branch_name) = branch_name {
-            println!("History for the branch '{branch_name}':\n");
+        let title = if let Some(branch_name) = branch_name {
+            format!("History for branch '{branch_name}'")
         } else {
-            println!("History (detached head):\n");
+            String::from("History (detached HEAD)")
+        };
+
+        let mut table = Table::new();
+
+        table.load_preset(UTF8_FULL)
+            .set_content_arrangement(ContentArrangement::Dynamic)
+            .set_header(["No", "Time", "Message", "Author",  "Hash"]);
+
+        for (idx, commit) in commits.into_iter().enumerate() {
+            let timestamp = format_timestamp_local(commit.timestamp);
+            table.add_row([
+                (idx + 1).to_string(),
+                timestamp,
+                commit.message,
+                commit.author,
+                commit.hash
+            ]);
         }
 
-        for (idx, commit) in commits.iter().enumerate() {
-            let hash_slice = &commit.hash; // &commit.hash[0..8];
-            println!("{}. {hash_slice}", idx + 1);
-            println!("    {} - {}", commit.author, commit.message);
-        }
+        println!("{title}");
+        println!("{table}");
 
         Ok(())
     }
+}
+
+fn format_timestamp_local(epoch: u64) -> String {
+    Local.timestamp_opt(epoch as i64, 0)
+        .single()
+        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+        .unwrap_or_else(|| {
+            // default to unix epoch in case something goes wrong
+            DateTime::<Utc>::from_timestamp(0, 0).unwrap().to_string()
+        })
 }
