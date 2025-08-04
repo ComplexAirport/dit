@@ -99,7 +99,7 @@ impl BranchMgr {
     pub(super) fn prepare_stage_for_switch_hard(&self, stage_mgr: &mut StageMgr) -> DitResult<()>
     {
         if stage_mgr.is_staged() {
-            stage_mgr.clear_stage()?;
+            stage_mgr.clear_stage(true)?;
         }
         Ok(())
     }

@@ -42,14 +42,20 @@ impl StageMgr {
 
     /// Clears all staged files and clears the [`STAGE_FILE`]
     ///
+    /// - `remove_files` - specifies whether to remove files from the filesystem or only
+    ///     update the inner state and the stage file
+    ///
     /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
-    pub fn clear_stage(&mut self) -> DitResult<()> {
-        for path in self.stage.files.values() {
-            remove_file(path)?;
+    pub fn clear_stage(&mut self, remove_files: bool) -> DitResult<()> {
+        if remove_files {
+            for path in self.stage.files.values() {
+                if path.is_file() {
+                    remove_file(path)?;
+                }
+            }
         }
         self.stage.files.clear();
         self.update_stage_file()?;
         Ok(())
     }
-
 }

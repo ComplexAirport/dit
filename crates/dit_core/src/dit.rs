@@ -103,7 +103,7 @@ impl Dit {
 
     /// Clears the stage
     pub fn clear_stage(&mut self) -> DitResult<()> {
-        self.stage_mgr.borrow_mut().clear_stage()
+        self.stage_mgr.borrow_mut().clear_stage(true)
     }
 }
 

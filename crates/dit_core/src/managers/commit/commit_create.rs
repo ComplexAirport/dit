@@ -31,6 +31,7 @@ impl CommitMgr {
         )?;
 
         branch_mgr.set_head_commit(commit_hash)?;
+        stage_mgr.clear_stage(false)?;
 
         Ok(())
     }
