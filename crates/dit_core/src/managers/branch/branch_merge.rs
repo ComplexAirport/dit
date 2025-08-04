@@ -2,7 +2,7 @@ use crate::managers::blob::BlobMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
-use crate::errors::{BranchError, DitResult};
+use crate::errors::{BranchError, DitCoreError, DitResult};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use crate::models::Tree;
@@ -54,122 +54,10 @@ impl BranchMgr {
             return Ok(());
         }
 
-        // Otherwise, we should find the common ancestor and merge based on it
-        let common_ancestor = commit_mgr.common_ancestor(&from, &to)?;
-        if common_ancestor.is_none() {
-            // todo: make it possible to merge branches with no common ancestors
-            return Err(BranchError::CannotMergeBranchesWithNoCommonAncestors(from, to).into());
-        }
-
-        // todo: remove the unwraps
-        let common_ancestor = common_ancestor.unwrap();
-        let common_tree = commit_mgr.get_commit_tree(common_ancestor, tree_mgr)?;
-
-        let from_commit_hash = self.get_branch_head(&from)?.unwrap();
-        let from_tree = commit_mgr.get_commit_tree(from_commit_hash, tree_mgr)?;
-
-        let to_commit_hash = self.get_branch_head(&to)?.unwrap();
-        let to_tree = commit_mgr.get_commit_tree(to_commit_hash, tree_mgr)?;
-
-        let files_history = self.collect_files_history(
-            common_tree, from_tree, to_tree);
-
-
-        let mut conflicts: Vec<PathBuf> = Vec::new();
-        for (rel_path, file_history) in files_history {
-            let conflict = self.check_conflict(&file_history);
-
-            match conflict {
-                FileConflict::Present => conflicts.push(rel_path),
-                FileConflict::None => {}
-            }
-        }
-
-        if !conflicts.is_empty() {
-            return Err(BranchError::MergeConflicts(conflicts).into());
+        else {
+            return Err(BranchError::MergeNotSupported.into());
         }
 
         Ok(())
     }
-
-
-    /// Collects history of files in a common tree, "from" tree and "to" tree
-    fn collect_files_history(
-        &self,
-        common_tree: Tree,
-        from_tree: Tree,
-        to_tree: Tree,
-    ) -> BTreeMap<PathBuf, FileHistory> {
-        let mut result = BTreeMap::new();
-
-        for (rel_path, blob_hash) in common_tree.files {
-            result.insert(rel_path, FileHistory::new(Some(blob_hash), None, None));
-        }
-
-        for (rel_path, blob_hash) in from_tree.files {
-            if let Some(change) = result.get_mut(&rel_path) {
-                change.from_blob_hash = Some(blob_hash);
-            } else {
-                result.insert(rel_path, FileHistory::new(None, Some(blob_hash), None));
-            }
-        }
-
-        for (rel_path, blob_hash) in to_tree.files {
-            if let Some(change) = result.get_mut(&rel_path) {
-                change.to_blob_hash = Some(blob_hash);
-            } else {
-                result.insert(rel_path, FileHistory::new(None, None, Some(blob_hash)));
-            }
-        }
-
-        result
-    }
-
-    /// Checks for a conflict given a [`FileHistory`]
-    fn check_conflict(
-        &self,
-        file_history: &FileHistory
-    ) -> FileConflict {
-        let common_ancestor = &file_history.common_ancestor_blob_hash;
-        let from = &file_history.from_blob_hash;
-        let to = &file_history.to_blob_hash;
-
-        if let Some(from) = from && let Some(to) = to
-            && from != to {
-            return FileConflict::Present;
-        }
-
-        FileConflict::None
-    }
-}
-
-
-/// This struct contains tracks file blob hashes across three different trees:
-/// common ancestor tree, from_tree and to_tree
-#[derive(Debug, Clone, Ord, Eq, PartialEq, PartialOrd)]
-struct FileHistory {
-    common_ancestor_blob_hash: Option<String>,
-    from_blob_hash: Option<String>,
-    to_blob_hash: Option<String>,
-}
-
-impl FileHistory {
-    fn new(
-        common_ancestor_blob_hash: Option<String>,
-        from_blob_hash: Option<String>,
-        to_blob_hash: Option<String>
-    ) -> Self {
-        Self {
-            common_ancestor_blob_hash,
-            from_blob_hash,
-            to_blob_hash,
-        }
-    }
-}
-
-
-/// This enum represents a file conflict type
-enum FileConflict {
-    None,
-    Present
 }
