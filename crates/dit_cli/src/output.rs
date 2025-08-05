@@ -22,10 +22,21 @@ macro_rules! failure {
 
 #[macro_export]
 macro_rules! warning {
-    ($($args:tt)*) => {
+    ($($arg:tt)*) => {
         println!(
             "{} {}",
             console::style("[~]").yellow().bold(),
+            format!($($arg)*)
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! hint {
+        ($($arg:tt)*) => {
+        println!(
+            "{} hint: {}",
+            console::style("[*]").dim().bold(),
             format!($($arg)*)
         )
     };

@@ -1,4 +1,5 @@
 use crate::error::{CliResult, DitCliError};
+use crate::{failure, hint};
 use std::path::{Path, PathBuf};
 use dit_core::{Dit, DIT_ROOT};
 
@@ -19,8 +20,8 @@ pub trait HandleSubcommand {
             },
 
             None => {
-                eprintln!("error: not a dit project (or any of the parent directories)");
-                eprintln!("hint: initialize with `dit init`");
+                failure!("error: not a dit project (or any of the parent directories)");
+                hint!("initialize with `dit init`");
                 std::process::exit(1);
             }
         }
