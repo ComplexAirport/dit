@@ -1,7 +1,6 @@
 ﻿use crate::Dit;
-use crate::models::Stage;
 use crate::errors::DitResult;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Manipulate the stage
 impl Dit {
@@ -25,7 +24,29 @@ impl Dit {
 /// Getters
 impl Dit {
     /// Returns the staged files
-    pub fn get_stage(&self) -> Stage {
-        self.stage_mgr.borrow().get_stage().clone()
+    pub fn get_staged_files(&self) -> Vec<PathBuf> {
+        self.stage_mgr.borrow()
+            .get_stage()
+            .files
+            .keys()
+            .cloned()
+            .collect()
     }
+
+    // /// Returns a list of staged files which were modified
+    // pub fn get_staged_modified_files(&self) -> DitResult<Vec<PathBuf>> {
+    //     let stage_mgr = self.stage_mgr.borrow();
+    //     let stage = stage_mgr.get_stage();
+    //
+    //     let modified = Vec::new();
+    //     for (rel_path, blob_hash) in &stage.files {
+    //         let abs_path = self.repo.get_absolute_path(rel_path)?;
+    //
+    //         if abs_path.is_file() {
+    //
+    //         }
+    //     }
+    //
+    //     Ok(modified)
+    // }
 }

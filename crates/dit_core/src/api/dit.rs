@@ -12,6 +12,7 @@ use std::rc::Rc;
 
 /// Main API for working with the Dit version control system
 pub struct Dit {
+    pub(super) repo: Rc<Repo>,
     pub(super) blob_mgr: RefCell<BlobMgr>,
     pub(super) tree_mgr: RefCell<TreeMgr>,
     pub(super) commit_mgr: RefCell<CommitMgr>,
@@ -28,6 +29,7 @@ impl Dit {
         let repo = Rc::new(Repo::init(project_path)?);
 
         let dit = Self {
+            repo: repo.clone(),
             blob_mgr: RefCell::new(BlobMgr::from(repo.clone())),
             tree_mgr: RefCell::new(TreeMgr::from(repo.clone())),
             stage_mgr: RefCell::new(StageMgr::from(repo.clone())?),

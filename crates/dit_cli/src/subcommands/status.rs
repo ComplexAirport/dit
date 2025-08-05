@@ -34,12 +34,12 @@ impl HandleSubcommand for StatusSubcommand {
             None => println!("No commits yet")
         }
 
-        let staged_files = dit.get_stage().files;
+        let staged_files = dit.get_staged_files();
         if staged_files.is_empty() {
             println!("No staged files");
         } else {
-            println!("Staged files:");
-            for path in staged_files.keys() {
+            println!("\nStaged files:");
+            for path in staged_files {
                 println!("    {}", style(path.display()).bright());
             }
         }
