@@ -21,8 +21,8 @@ impl HandleSubcommand for StatusSubcommand {
         // or last time being staged
 
         let dit = Self::require_dit()?;
-        let branch_name = dit.branch();
-        let head_commit = dit.head_commit();
+        let branch_name = dit.get_branch();
+        let head_commit = dit.get_head_commit();
 
         match branch_name {
             Some(b) => println!("On branch '{}'", style(b).green().bold()),
@@ -34,16 +34,15 @@ impl HandleSubcommand for StatusSubcommand {
             None => println!("No commits yet")
         }
 
-        dit.with_stage(|staged_files| {
-            if !staged_files.files.is_empty() {
-                println!("Changes to be committed: ");
-                for path in staged_files.files.keys() {
-                    println!("    {}", path.display());
-                }
-            } else {
-                println!();
+        let staged_files = dit.get_stage().files;
+        if staged_files.is_empty() {
+            println!("No staged files");
+        } else {
+            println!("Staged files:");
+            for path in staged_files.keys() {
+                println!("    {}", style(path.display()).bright());
             }
-        });
+        }
 
         Ok(())
     }

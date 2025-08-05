@@ -16,7 +16,7 @@
 //! location of the copied file in the temporary "buffer" zone. This way,
 //! when a commit happens, the system knows where to find the staged file content.
 
-use crate::repo::Repo;
+use crate::Repo;
 use crate::errors::DitResult;
 use crate::models::Stage;
 use std::rc::Rc;

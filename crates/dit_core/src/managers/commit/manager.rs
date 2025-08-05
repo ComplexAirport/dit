@@ -5,7 +5,7 @@
 //! The metadata includes the author who wrote the changes, the parent
 //! commit, the commit message, etc.
 
-use crate::repo::Repo;
+use crate::Repo;
 use std::rc::Rc;
 
 /// Manages the commits in our Dit version control system

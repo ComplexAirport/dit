@@ -6,8 +6,8 @@ use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::models::{Commit, Stage};
-use crate::repo::Repo;
 use crate::errors::DitResult;
+use crate::Repo;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -22,7 +22,7 @@ pub struct Dit {
 }
 
 
-/// Constructors
+/// Constructor
 impl Dit {
     /// Constructs the object given the project path (inside which the `.dit` is located) \
     /// Constructs all the managers
@@ -145,17 +145,17 @@ impl Dit {
 /// Getters
 impl Dit {
     /// Returns the name of the current branch
-    pub fn branch(&self) -> Option<String> {
+    pub fn get_branch(&self) -> Option<String> {
         self.branch_mgr.borrow().get_current_branch().cloned()
     }
 
     /// Returns the hash of the current HEAD commit
-    pub fn head_commit(&self) -> Option<String> {
+    pub fn get_head_commit(&self) -> Option<String> {
         self.branch_mgr.borrow().get_head_commit().cloned()
     }
 
     /// Returns the commit history
-    pub fn history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
+    pub fn get_history(&mut self, mut count: isize) -> DitResult<Vec<Commit>> {
         if count < 0 {
             count = isize::MAX;
         }
@@ -178,8 +178,8 @@ impl Dit {
         Ok(commits)
     }
 
-    /// Returns staged files
-    pub fn with_stage(&self, f: impl FnOnce(&Stage)) {
-        f(self.stage_mgr.borrow().stage());
+    /// Returns the staged files
+    pub fn get_stage(&self) -> Stage {
+        self.stage_mgr.borrow().stage().clone()
     }
 }

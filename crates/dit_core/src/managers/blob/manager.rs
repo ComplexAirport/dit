@@ -25,7 +25,7 @@
 //! This file can later be reused for the same file if the contents don't change
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
-use crate::repo::Repo;
+use crate::Repo;
 use std::rc::Rc;
 
 /// Manages the blobs in our Dit version control system \

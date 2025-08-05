@@ -27,7 +27,7 @@
 //! }
 //! ```
 
-use crate::repo::Repo;
+use crate::Repo;
 use std::rc::Rc;
 
 /// Manages the trees in our Dit version control system

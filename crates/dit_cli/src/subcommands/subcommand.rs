@@ -1,7 +1,6 @@
 use crate::error::{CliResult, DitCliError};
 use std::path::{Path, PathBuf};
-use dit_core::dit::Dit;
-use dit_core::DIT_ROOT;
+use dit_core::{Dit, DIT_ROOT};
 
 pub trait HandleSubcommand {
     fn handle(&self) -> CliResult<()>;

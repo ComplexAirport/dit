@@ -1,4 +1,4 @@
-﻿use crate::project_structure::*;
+﻿use super::dit_component_paths::*;
 use crate::errors::{DitResult, ProjectError};
 use crate::helpers::resolve_absolute_path;
 use std::fs::{self, File};
@@ -65,6 +65,7 @@ impl Repo {
             commits_root,
             branches_root,
             head_file,
+            // todo
             ignore: vec![PathBuf::from(".dit"), PathBuf::from("dit.exe")],
         })
     }
@@ -74,14 +75,13 @@ impl Repo {
             fs::create_dir_all(path)
                 .map_err(|_|
                     ProjectError::SubDirCreationError(path.display().to_string()))?;
-
         }
         Ok(())
     }
 
     fn init_sub_file(path: &Path) -> DitResult<()> {
         if !path.is_file() {
-            // this should not fail because subdirectories are created
+            // this cannot fail because subdirectories are created
             // before creating the files
             File::create(path)
                 .map_err(|_|
@@ -92,7 +92,7 @@ impl Repo {
     }
 }
 
-/// API
+/// Path getters
 impl Repo {
     /// Returns the project path where the `.dit` is located
     pub fn repo_path(&self) -> &Path {

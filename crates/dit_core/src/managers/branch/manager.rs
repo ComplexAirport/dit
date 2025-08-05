@@ -1,4 +1,4 @@
-use crate::repo::Repo;
+use crate::Repo;
 use crate::errors::DitResult;
 use std::rc::Rc;
 

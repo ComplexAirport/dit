@@ -1,8 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::{CliResult, DitCliError};
 use clap::Args;
-use dit_core::dit::Dit;
-use dit_core::DIT_ROOT;
+use dit_core::{Dit, DIT_ROOT};
 use crate::success;
 
 #[derive(Args)]
@@ -21,7 +20,7 @@ impl HandleSubcommand for InitSubcommand {
 
         // default behavior:
         // if no head branch is found, a default "main" branch will be created
-        if dit.branch().is_none() {
+        if dit.get_branch().is_none() {
             dit.create_branch("main")?;
         }
 
