@@ -27,7 +27,7 @@ impl CommitMgr {
         let message = message.into();
 
         let commit_hash = self.create_commit_inner(
-            author, message, stage_mgr.stage(), parent, tree_mgr
+            author, message, stage_mgr.get_stage(), parent, tree_mgr
         )?;
 
         branch_mgr.set_head_commit(commit_hash)?;

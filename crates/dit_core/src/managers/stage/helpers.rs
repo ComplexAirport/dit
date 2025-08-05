@@ -46,7 +46,7 @@ impl StageMgr {
         !self.stage.files.is_empty()
     }
 
-    pub fn stage(&self) -> &Stage {
+    pub fn get_stage(&self) -> &Stage {
         &self.stage
     }
 }
