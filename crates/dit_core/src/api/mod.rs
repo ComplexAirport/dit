@@ -8,3 +8,4 @@ mod branches;
 pub use dit::Dit;
 pub use dit_component_paths::DIT_ROOT;
 pub use repo::Repo;
+pub mod models;

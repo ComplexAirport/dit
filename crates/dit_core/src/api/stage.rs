@@ -1,6 +1,9 @@
 ﻿use crate::Dit;
 use crate::errors::DitResult;
+use crate::api::models::Status;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
+use crate::helpers::calculate_hash;
 
 /// Manipulate the stage
 impl Dit {
@@ -23,30 +26,47 @@ impl Dit {
 
 /// Getters
 impl Dit {
-    /// Returns the staged files
-    pub fn get_staged_files(&self) -> Vec<PathBuf> {
-        self.stage_mgr.borrow()
-            .get_stage()
-            .files
-            .keys()
-            .cloned()
-            .collect()
-    }
+    /// Returns the status
+    pub fn get_status(&self) -> DitResult<Status> {
+        let stage_mgr = self.stage_mgr.borrow();
+        let stage = &stage_mgr.get_stage().files;
 
-    // /// Returns a list of staged files which were modified
-    // pub fn get_staged_modified_files(&self) -> DitResult<Vec<PathBuf>> {
-    //     let stage_mgr = self.stage_mgr.borrow();
-    //     let stage = stage_mgr.get_stage();
-    //
-    //     let modified = Vec::new();
-    //     for (rel_path, blob_hash) in &stage.files {
-    //         let abs_path = self.repo.get_absolute_path(rel_path)?;
-    //
-    //         if abs_path.is_file() {
-    //
-    //         }
-    //     }
-    //
-    //     Ok(modified)
-    // }
+        let mut status = Status::new();
+
+        for entry in WalkDir::new(self.repo.repo_path())
+            .min_depth(1)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| e.file_type().is_file())
+        {
+            let abs_path = entry.path().to_path_buf();
+            let rel_path = self.repo.get_relative_path(&abs_path)?;
+
+            if let Some(blob_path) = stage.get(&rel_path) {
+                if !abs_path.is_file() {
+                    status.add_staged_deleted_file(rel_path);
+                    continue;
+                }
+
+                let blob_hash = blob_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+
+                let hash = calculate_hash(abs_path)?;
+                if hash != blob_hash {
+                    status.add_staged_modified_file(rel_path);
+                } else {
+                    status.add_staged_unchanged_file(rel_path);
+                }
+            } else {
+                status.add_untracked_file(rel_path);
+            }
+        }
+
+        // todo: iterate through staged_files now
+
+        Ok(status)
+    }
 }

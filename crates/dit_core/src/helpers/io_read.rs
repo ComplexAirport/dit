@@ -3,7 +3,9 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
-
+use sha2::{Digest, Sha256};
+use similar::DiffableStr;
+use crate::helpers::{write_to_buf_writer, BUFFER_SIZE};
 
 /// Reads a file using [`fs::read_to_string`] and maps the error to [`FsError`]
 pub fn read_to_string<P: AsRef<Path>>(path: P) -> DitResult<String> {
@@ -37,4 +39,29 @@ pub fn get_buf_reader<P: AsRef<Path>>(path: P) -> DitResult<BufReader<File>> {
     File::open(path)
         .map(BufReader::new)
         .map_err(|_| FsError::FileOpenError(path.display().to_string()).into())
+}
+
+
+/// Calculates the hash of a file
+pub fn calculate_hash<P: AsRef<Path>>(path: P) -> DitResult<String> {
+    let path = path.as_ref();
+    let mut reader = get_buf_reader(path)?;
+
+    let mut buffer = [0; BUFFER_SIZE];
+    let mut hasher = Sha256::new();
+    loop {
+        let n = read_from_buf_reader(
+            &mut reader,
+            &mut buffer,
+            path
+                .file_name()
+                .unwrap_or_default())?;
+
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buffer[..n]);
+    }
+    let hash = format!("{:x}", hasher.finalize());
+    Ok(hash)
 }

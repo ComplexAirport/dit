@@ -15,11 +15,6 @@ pub struct StatusSubcommand {
 
 impl HandleSubcommand for StatusSubcommand {
     fn handle(&self) -> CliResult<()> {
-        // todo: this needs to be changed
-        // also need to display files which are not tracked
-        // and also the files which were changed compared to the last commit
-        // or last time being staged
-
         let dit = Self::require_dit()?;
         let branch_name = dit.get_branch();
         let head_commit = dit.get_head_commit();
@@ -34,13 +29,38 @@ impl HandleSubcommand for StatusSubcommand {
             None => println!("No commits yet")
         }
 
-        let staged_files = dit.get_staged_files();
-        if staged_files.is_empty() {
-            println!("No staged files");
-        } else {
-            println!("\nStaged files:");
-            for path in staged_files {
-                println!("    {}", style(path.display()).bright());
+        let status =  dit.get_status()?;
+
+        let unchanged = status.staged_files();
+        if !unchanged.is_empty() {
+            println!("\nFiles to be commited:");
+            for path in unchanged {
+                println!("\t{}", style(path.to_string_lossy().to_string()).green().bold());
+            }
+        }
+
+        let modified = status.modified_files();
+        if !modified.is_empty() {
+            println!("\nModified files:");
+            for path in modified {
+                println!("\t{}", style(path.to_string_lossy().to_string()).yellow().bold());
+            }
+        }
+
+        let deleted = status.deleted_files();
+        if !deleted.is_empty() {
+            println!("\nDeleted files:");
+            for path in deleted {
+                println!("\t{}", style(path.to_string_lossy().to_string()).red().bold());
+            }
+        }
+
+        let untracked = status.untracked_files();
+        if !untracked.is_empty() {
+            // todo: compare with parent tree
+            println!("\nUntracked files:");
+            for path in untracked {
+                println!("\t{}", style(path.to_string_lossy().to_string()).dim().bold());
             }
         }
 

@@ -3,7 +3,7 @@ use managers::{blob, tree, commit, stage, branch};
 
 pub mod errors;
 pub mod helpers;
-pub mod models;
+mod models;
 mod api;
 
 pub use api::{Dit, DIT_ROOT, Repo};
