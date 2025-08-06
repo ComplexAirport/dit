@@ -1,17 +1,16 @@
 ﻿use crate::errors::{DitResult, FsError};
+use crate::helpers::{path_to_string, BUFFER_SIZE};
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 use sha2::{Digest, Sha256};
-use similar::DiffableStr;
-use crate::helpers::{write_to_buf_writer, BUFFER_SIZE};
 
 /// Reads a file using [`fs::read_to_string`] and maps the error to [`FsError`]
 pub fn read_to_string<P: AsRef<Path>>(path: P) -> DitResult<String> {
     let path = path.as_ref();
     fs::read_to_string(path)
-        .map_err(|_| FsError::FileReadError(path.display().to_string()).into())
+        .map_err(|_| FsError::FileReadError(path_to_string(path)).into())
 }
 
 
@@ -27,7 +26,7 @@ pub fn read_from_buf_reader<P: AsRef<Path>>(
     let file_path = file_path.as_ref();
 
     reader.read(buffer)
-        .map_err(|_| FsError::FileReadError(file_path.display().to_string()).into())
+        .map_err(|_| FsError::FileReadError(path_to_string(file_path)).into())
 }
 
 
@@ -38,7 +37,7 @@ pub fn get_buf_reader<P: AsRef<Path>>(path: P) -> DitResult<BufReader<File>> {
     let path = path.as_ref();
     File::open(path)
         .map(BufReader::new)
-        .map_err(|_| FsError::FileOpenError(path.display().to_string()).into())
+        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
 }
 
 

@@ -1,3 +1,6 @@
-﻿mod status;
+﻿//! This module contains various models that Dit API returns to
+//! the external users
 
-pub use status::Status;
+mod status;
+
+pub use status::{Status, ChangeType};

@@ -1,5 +1,5 @@
 ﻿use crate::errors::{CommitError, DitResult};
-use crate::helpers::{read_to_string, write_to_file};
+use crate::helpers::{read_to_string, write_to_file, path_to_string};
 use crate::impl_read_write_model;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

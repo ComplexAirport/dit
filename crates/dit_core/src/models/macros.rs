@@ -25,7 +25,7 @@ macro_rules! impl_read_write_model {
                 let serialized = read_to_string(&path)?;
 
                 let model: $model = serde_json::from_str(&serialized)
-                    .map_err(|_| $err_enum::DeserializationError(path.display().to_string()))?;
+                    .map_err(|_| $err_enum::DeserializationError(path_to_string(path)))?;
 
                 Ok(model)
             }

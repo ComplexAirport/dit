@@ -1,4 +1,4 @@
-﻿use crate::helpers::{rename_file, BUFFER_SIZE};
+﻿use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
 use crate::helpers::temp_file::create_temp_file;
 use crate::errors::{DitResult, FsError};
@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 pub fn write_to_file<P: AsRef<Path>, S: AsRef<str>>(path: P, content: S) -> DitResult<()> {
     let path = path.as_ref();
     fs::write(path, content.as_ref())
-        .map_err(|_| FsError::FileWriteError(path.display().to_string()).into())
+        .map_err(|_| FsError::FileWriteError(path_to_string(path)).into())
 }
 
 /// Writes to a [`BufWriter`] from a buffer and maps the error to [`FsError`]
@@ -25,7 +25,7 @@ pub fn write_to_buf_writer<P: AsRef<Path>>(
     let file_path = file_path.as_ref();
 
     writer.write_all(buffer)
-        .map_err(|_| FsError::FileWriteError(file_path.display().to_string()).into())
+        .map_err(|_| FsError::FileWriteError(path_to_string(file_path)).into())
 }
 
 
@@ -83,7 +83,7 @@ pub fn get_buf_writer<P: AsRef<Path>>(path: P) -> DitResult<BufWriter<File>> {
     let path = path.as_ref();
     File::create(path)
         .map(BufWriter::new)
-        .map_err(|_| FsError::FileOpenError(path.display().to_string()).into())
+        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
 }
 
 

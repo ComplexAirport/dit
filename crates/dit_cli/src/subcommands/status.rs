@@ -1,7 +1,9 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
+use dit_core::api_models::ChangeType;
 use clap::Args;
 use console::style;
+use dit_core::helpers::path_to_string;
 
 #[derive(Args)]
 pub struct StatusSubcommand {
@@ -31,36 +33,33 @@ impl HandleSubcommand for StatusSubcommand {
 
         let status =  dit.get_status()?;
 
-        let unchanged = status.staged_files();
-        if !unchanged.is_empty() {
-            println!("\nFiles to be commited:");
-            for path in unchanged {
-                println!("\t{}", style(path.to_string_lossy().to_string()).green().bold());
+        if status.has_any_tracked() {
+            println!("Changed to be commited:");
+            for path in status.get_tracked(ChangeType::New) {
+                println!("\tnew file: {}", style(path_to_string(path)).green().bold());
+            }
+            for path in status.get_tracked(ChangeType::Modified) {
+                println!("\tmodified: {}", style(path_to_string(path)).green().bold());
+            }
+            for path in status.get_tracked(ChangeType::Deleted) {
+                println!("\tdeleted: {}", style(path_to_string(path)).red().strikethrough());
             }
         }
 
-        let modified = status.modified_files();
-        if !modified.is_empty() {
-            println!("\nModified files:");
-            for path in modified {
-                println!("\t{}", style(path.to_string_lossy().to_string()).yellow().bold());
+        if status.has_any_unstaged() {
+            println!("\nUnstaged changes:");
+            for path in status.get_unstaged(ChangeType::Modified) {
+                println!("\tmodified: {}", style(path_to_string(path)).yellow().bold());
+            }
+            for path in status.get_unstaged(ChangeType::Deleted) {
+                println!("\tdeleted: {}", style(path_to_string(path)).red().strikethrough());
             }
         }
 
-        let deleted = status.deleted_files();
-        if !deleted.is_empty() {
-            println!("\nDeleted files:");
-            for path in deleted {
-                println!("\t{}", style(path.to_string_lossy().to_string()).red().bold());
-            }
-        }
-
-        let untracked = status.untracked_files();
-        if !untracked.is_empty() {
-            // todo: compare with parent tree
+        if status.has_any_untracked() {
             println!("\nUntracked files:");
-            for path in untracked {
-                println!("\t{}", style(path.to_string_lossy().to_string()).dim().bold());
+            for path in status.get_untracked() {
+                println!("\t{}", style(path_to_string(path)).dim().bold());
             }
         }
 

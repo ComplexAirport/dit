@@ -1,4 +1,5 @@
 use crate::errors::{DitResult, FsError, OtherError};
+use crate::helpers::path_to_string;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
@@ -36,7 +37,7 @@ pub fn create_temp_file<P: AsRef<Path>>(dest_dir: P)
             }
 
             Err(_) =>
-                return Err(FsError::FileCreateError(path.display().to_string()).into())
+                return Err(FsError::FileCreateError(path_to_string(path)).into())
         }
     }
 }

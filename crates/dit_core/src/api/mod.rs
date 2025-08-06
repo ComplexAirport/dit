@@ -1,9 +1,10 @@
 ﻿mod dit;
 mod dit_component_paths;
 mod repo;
-mod commits;
+mod commit;
 mod stage;
-mod branches;
+mod branch;
+mod status;
 
 pub use dit::Dit;
 pub use dit_component_paths::DIT_ROOT;

@@ -9,4 +9,4 @@
 
 ### CLI
 - [x] Add unified output support. Instead of doing `println!(...)`, use something like `success!(...)`, or `warning!(...)`, etc.
-- [ ] Show unstaged files, staged but changed files, staged files in `dit status`
+- [x] Show unstaged files, staged but changed files, staged files in `dit status`

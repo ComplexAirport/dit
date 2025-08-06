@@ -14,7 +14,7 @@ impl StageMgr {
         let serialized = read_to_string(path)?;
 
         let staged_files = if serialized.is_empty() {
-            Stage::new()
+            Stage::default()
         } else {
             serde_json::from_str(&serialized)
                 .map_err(|_| StagingError::DeserializationError)?

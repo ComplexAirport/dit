@@ -30,3 +30,11 @@ fn normalize_path(p: PathBuf) -> PathBuf {
 fn normalize_path(p: PathBuf) -> PathBuf {
     p
 }
+
+
+pub fn path_to_string<P: AsRef<Path>>(path: P) -> String {
+    path
+        .as_ref()
+        .to_string_lossy()
+        .to_string()
+}

@@ -1,6 +1,6 @@
 ﻿use super::dit_component_paths::*;
 use crate::errors::{DitResult, ProjectError};
-use crate::helpers::resolve_absolute_path;
+use crate::helpers::{path_to_string, resolve_absolute_path};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
@@ -26,8 +26,7 @@ impl Repo {
         let project_path = project_path.as_ref().to_path_buf();
 
         if !project_path.is_dir() {
-            return Err(ProjectError::ProjectPathNotADirectory(
-                project_path.display().to_string()).into());
+            return Err(ProjectError::ProjectPathNotADirectory(path_to_string(project_path)).into());
         }
 
         let dit_root = project_path.join(DIT_ROOT);
@@ -74,7 +73,7 @@ impl Repo {
         if !path.is_dir() {
             fs::create_dir_all(path)
                 .map_err(|_|
-                    ProjectError::SubDirCreationError(path.display().to_string()))?;
+                    ProjectError::SubDirCreationError(path_to_string(path)))?;
         }
         Ok(())
     }
@@ -85,7 +84,7 @@ impl Repo {
             // before creating the files
             File::create(path)
                 .map_err(|_|
-                    ProjectError::SubFileCreationError(path.display().to_string())
+                    ProjectError::SubFileCreationError(path_to_string(path))
                 )?;
         }
         Ok(())
@@ -147,7 +146,7 @@ impl Repo {
         if self.includes_path(path) {
             Ok(resolve_absolute_path(path)?)
         } else {
-            Err(ProjectError::FileNotInProject(path.display().to_string()).into())
+            Err(ProjectError::FileNotInProject(path_to_string(path)).into())
         }
     }
 
@@ -168,7 +167,7 @@ impl Repo {
                 .unwrap()
                 .to_path_buf())
         } else {
-            Err(ProjectError::FileNotInProject(path.display().to_string()).into())
+            Err(ProjectError::FileNotInProject(path_to_string(path)).into())
         }
     }
 

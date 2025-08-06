@@ -1,4 +1,4 @@
-﻿use crate::helpers::resolve_absolute_path;
+﻿use crate::helpers::{path_to_string, resolve_absolute_path};
 use crate::errors::{DitResult, FsError};
 use std::collections::HashSet;
 use std::fs;
@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 pub fn remove_file<P: AsRef<Path>>(path: P) -> DitResult<()> {
     let path = path.as_ref();
     fs::remove_file(path)
-        .map_err(|_| FsError::FileRemoveError(path.display().to_string()).into())
+        .map_err(|_| FsError::FileRemoveError(path_to_string(path)).into())
 }
 
 
@@ -18,7 +18,7 @@ pub fn remove_file<P: AsRef<Path>>(path: P) -> DitResult<()> {
 pub fn remove_dir<P: AsRef<Path>>(path: P) -> DitResult<()> {
     let path = path.as_ref();
     fs::remove_dir_all(path)
-        .map_err(|_| FsError::DirRemoveError(path.display().to_string()).into())
+        .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
 }
 
 
@@ -26,7 +26,7 @@ pub fn remove_dir<P: AsRef<Path>>(path: P) -> DitResult<()> {
 pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
     let path = path.as_ref();
     fs::remove_dir_all(path)
-        .map_err(|_| FsError::DirRemoveError(path.display().to_string()).into())
+        .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
 }
 
 
@@ -45,7 +45,7 @@ pub fn create_file_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
     }
 
     File::create(path)
-        .map_err(|_| FsError::FileCreateError(path.display().to_string()))?;
+        .map_err(|_| FsError::FileCreateError(path_to_string(path)))?;
 
     Ok(())
 }

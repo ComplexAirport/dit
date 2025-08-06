@@ -33,7 +33,7 @@ impl StageMgr {
     pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
         let mut mgr = Self {
             repo,
-            stage: Stage::new(),
+            stage: Stage::default(),
         };
         Self::load_stage_file(&mut mgr)?;
         Ok(mgr)

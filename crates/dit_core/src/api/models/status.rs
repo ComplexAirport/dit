@@ -1,46 +1,94 @@
 ﻿use std::path::PathBuf;
 
 /// Represents current staging status
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Status {
-    staged_unchanged_files: Vec<PathBuf>,
-    staged_modified_files: Vec<PathBuf>,
-    staged_deleted_files: Vec<PathBuf>,
+    tracked_creations: Vec<PathBuf>,
+    tracked_modifications: Vec<PathBuf>,
+    tracked_deletions: Vec<PathBuf>,
+
+    unstaged_modifications: Vec<PathBuf>,
+    unstaged_deletions: Vec<PathBuf>,
+
     untracked_files: Vec<PathBuf>,
+    unchanged_files: Vec<PathBuf>,
 }
 
+/// Getters
 impl Status {
-    pub fn staged_files(&self) -> &Vec<PathBuf> { &self.staged_unchanged_files }
-    pub fn modified_files(&self) -> &Vec<PathBuf> { &self.staged_modified_files }
-    pub fn deleted_files(&self) -> &Vec<PathBuf> { &self.staged_deleted_files }
-    pub fn untracked_files(&self) -> &Vec<PathBuf> { &self.untracked_files }
-}
+    pub fn new() -> Self { Self::default() }
 
-
-/// Helpers methods
-impl Status {
-    pub(crate) fn new() -> Self {
-        Self {
-            staged_unchanged_files: vec![],
-            staged_modified_files: vec![],
-            staged_deleted_files: vec![],
-            untracked_files: vec![],
+    pub fn get_tracked(&self, change_type: ChangeType) -> &Vec<PathBuf> {
+        match change_type {
+            ChangeType::Modified => &self.tracked_modifications,
+            ChangeType::Deleted => &self.tracked_deletions,
+            ChangeType::New => &self.tracked_creations,
         }
     }
 
-    pub(crate) fn add_staged_unchanged_file(&mut self, file: PathBuf) {
-        self.staged_unchanged_files.push(file);
+    pub fn get_unstaged(&self, change_type: ChangeType) -> &Vec<PathBuf> {
+        match change_type {
+            ChangeType::Modified => &self.unstaged_modifications,
+            ChangeType::Deleted => &self.unstaged_deletions,
+            ChangeType::New => &self.untracked_files, // NOTE: use get_untracked() instead of this
+        }
     }
 
-    pub(crate) fn add_staged_modified_file(&mut self, file: PathBuf) {
-        self.staged_modified_files.push(file);
+    pub fn get_unchanged(&self) -> &Vec<PathBuf> {
+        &self.unchanged_files
     }
 
-    pub(crate) fn add_staged_deleted_file(&mut self, file: PathBuf) {
-        self.staged_deleted_files.push(file);
+    pub fn get_untracked(&self) -> &Vec<PathBuf> {
+        &self.untracked_files
     }
 
-    pub(crate) fn add_untracked_file(&mut self, file: PathBuf) {
-        self.untracked_files.push(file);
+    /// Checks if there are any tracked changes
+    pub fn has_any_tracked(&self) -> bool {
+        !self.tracked_creations.is_empty() || !self.tracked_modifications.is_empty() || !self.tracked_deletions.is_empty()
     }
+
+    /// Checks if there are any unstaged changes
+    pub fn has_any_unstaged(&self) -> bool {
+        !self.unstaged_modifications.is_empty() || !self.unstaged_deletions.is_empty()
+    }
+
+    /// Checks if there are any untracked files
+    pub fn has_any_untracked(&self) -> bool {
+        !self.untracked_files.is_empty()
+    }
+
+    /// Checks if there are any unchanged files
+    pub fn has_any_unchanged(&self) -> bool {
+        !self.unchanged_files.is_empty()
+    }
+}
+
+/// Setters
+impl Status {
+    pub fn add_tracked(&mut self, rel_path: PathBuf, change_type: ChangeType) {
+        match change_type {
+            ChangeType::Modified => self.tracked_modifications.push(rel_path),
+            ChangeType::Deleted => self.tracked_deletions.push(rel_path),
+            ChangeType::New => self.tracked_creations.push(rel_path),
+        }
+    }
+
+    pub fn add_untracked(&mut self, rel_path: PathBuf, change_type: ChangeType) {
+        match change_type {
+            ChangeType::Modified => self.unstaged_modifications.push(rel_path),
+            ChangeType::Deleted => self.unstaged_deletions.push(rel_path),
+            ChangeType::New => self.untracked_files.push(rel_path),
+        }
+    }
+
+    pub fn add_unchanged(&mut self, rel_path: PathBuf) {
+        self.unchanged_files.push(rel_path);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ChangeType {
+    Modified,
+    Deleted,
+    New,
 }

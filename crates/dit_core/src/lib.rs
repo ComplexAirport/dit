@@ -7,3 +7,4 @@ mod models;
 mod api;
 
 pub use api::{Dit, DIT_ROOT, Repo};
+pub use api::models as api_models;

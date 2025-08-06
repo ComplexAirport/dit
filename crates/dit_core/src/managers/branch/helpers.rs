@@ -2,6 +2,9 @@ use crate::errors::DitResult;
 use crate::helpers::{read_to_string, write_to_file};
 use crate::managers::branch::BranchMgr;
 use std::path::PathBuf;
+use crate::managers::commit::CommitMgr;
+use crate::managers::tree::TreeMgr;
+use crate::models::Tree;
 
 /// Load/store from/to the [`HEAD_FILE`]
 ///
@@ -123,6 +126,19 @@ impl BranchMgr {
 
     /// Returns the hash of the current commit
     pub fn get_head_commit(&self) -> Option<&String> { self.curr_commit.as_ref() }
+
+    /// Return the tree of the current commit
+    pub fn get_head_tree(&self, tree_mgr: &TreeMgr, commit_mgr: &CommitMgr) -> DitResult<Option<Tree>> {
+        let head_commit = self.get_head_commit();
+
+        match head_commit {
+            None => Ok(None),
+            Some(head_commit) => {
+                let tree = commit_mgr.get_commit_tree(head_commit, tree_mgr)?;
+                Ok(Some(tree))
+            }
+        }
+    }
 }
 
 
