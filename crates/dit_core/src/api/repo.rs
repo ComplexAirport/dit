@@ -1,6 +1,6 @@
-﻿use super::dit_component_paths::*;
-use crate::errors::{DitResult, ProjectError};
-use crate::helpers::{path_to_string, resolve_absolute_path};
+﻿use crate::errors::{DitResult, ProjectError};
+use crate::helpers::{path_to_string, read_to_string, resolve_absolute_path};
+use super::dit_component_paths::*;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
@@ -16,6 +16,7 @@ pub struct Repo {
     commits_root: PathBuf,
     branches_root: PathBuf,
     head_file: PathBuf,
+    ignore_file: PathBuf,
     ignore: Vec<PathBuf>,
 }
 
@@ -23,49 +24,53 @@ pub struct Repo {
 impl Repo {
     /// Ensures all .dit components are created
     pub fn init<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
-        let project_path = project_path.as_ref().to_path_buf();
+        let repo_path = project_path.as_ref().to_path_buf();
 
-        if !project_path.is_dir() {
-            return Err(ProjectError::ProjectPathNotADirectory(path_to_string(project_path)).into());
+        if !repo_path.is_dir() {
+            return Err(ProjectError::ProjectPathNotADirectory(path_to_string(repo_path)).into());
         }
 
-        let dit_root = project_path.join(DIT_ROOT);
-        Self::init_sub_dir(&dit_root)?;
+        /*************************
+        * Component Directories
+        *************************/
+        let dit_root = repo_path.join(DIT_ROOT);
+        let blobs_root = repo_path.join(BLOBS_ROOT);
+        let trees_root = repo_path.join(TREES_ROOT);
+        let stage_root = repo_path.join(STAGE_ROOT);
+        let commits_root = repo_path.join(COMMITS_ROOT);
+        let branches_root = repo_path.join(BRANCHES_ROOT);
 
-        let blobs_root = project_path.join(BLOBS_ROOT);
-        Self::init_sub_dir(&blobs_root)?;
+        let component_dirs = [
+            &dit_root, &blobs_root, &trees_root, &stage_root, &commits_root, &branches_root
+        ];
 
-        let trees_root = project_path.join(TREES_ROOT);
-        Self::init_sub_dir(&trees_root)?;
+        /*************************
+        * Component Files
+        *************************/
+        let stage_file = repo_path.join(STAGE_FILE);
+        let head_file = repo_path.join(HEAD_FILE);
+        let component_files = [&stage_file, &head_file];
 
-        let stage_root = project_path.join(STAGE_ROOT);
-        Self::init_sub_dir(&stage_root)?;
+        for component_dir in component_dirs {
+            Self::init_sub_dir(component_dir)?;
+        }
 
-        let commits_root = project_path.join(COMMITS_ROOT);
-        Self::init_sub_dir(&commits_root)?;
+        for component_path in component_files {
+            Self::init_sub_file(component_path)?;
+        }
 
-        let branches_root = project_path.join(BRANCHES_ROOT);
-        Self::init_sub_dir(&branches_root)?;
+        let ignore_file = repo_path.join(IGNORE_FILE);
+        let mut ignore = Self::read_ignore_file(&ignore_file)?;
 
-        // Initialize the files ONLY after creating all subdirectories
-        let stage_file = project_path.join(STAGE_FILE);
-        Self::init_sub_file(&stage_file)?;
-
-        let head_file = project_path.join(HEAD_FILE);
-        Self::init_sub_file(&head_file)?;
+        for default_ignored_file in DEFAULT_IGNORED_FILES {
+            ignore.push(repo_path.join(default_ignored_file));
+        }
 
         Ok(Self {
-            repo_path: project_path,
-            dit_root,
-            blobs_root,
-            trees_root,
-            stage_root,
-            stage_file,
-            commits_root,
-            branches_root,
-            head_file,
-            // todo
-            ignore: vec![PathBuf::from(".dit"), PathBuf::from("dit.exe")],
+            repo_path, dit_root, blobs_root,
+            trees_root, stage_root, stage_file,
+            commits_root, branches_root, head_file,
+            ignore_file, ignore
         })
     }
 
@@ -88,6 +93,19 @@ impl Repo {
                 )?;
         }
         Ok(())
+    }
+
+    fn read_ignore_file(path: &Path) -> DitResult<Vec<PathBuf>> {
+        if path.is_file() {
+            let ignore_paths: Vec<PathBuf> = read_to_string(path)?
+                .lines()
+                .map(PathBuf::from)
+                .collect();
+
+            Ok(ignore_paths)
+        } else {
+            Ok(Vec::new())
+        }
     }
 }
 

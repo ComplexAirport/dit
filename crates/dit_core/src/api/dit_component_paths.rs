@@ -7,3 +7,4 @@ pub const STAGE_ROOT: &str = ".dit/stage";
 pub const STAGE_FILE: &str = ".dit/stage/staged_files";
 pub const HEAD_FILE: &str = ".dit/head";
 pub const IGNORE_FILE: &str=  ".ditignore";
+pub const DEFAULT_IGNORED_FILES: &[&str] = &[DIT_ROOT];
