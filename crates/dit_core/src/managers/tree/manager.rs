@@ -28,16 +28,16 @@
 //! ```
 
 use crate::Repo;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Manages the trees in our Dit version control system
 pub struct TreeMgr {
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
 }
 
 /// Constructors
 impl TreeMgr {
-    pub fn from(repo: Rc<Repo>) -> Self {
+    pub fn from(repo: Arc<Repo>) -> Self {
         Self { repo }
     }
 }

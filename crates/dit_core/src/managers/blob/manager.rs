@@ -26,18 +26,18 @@
 //! or other files with identical content. This way, we avoid unnecessary copying.
 
 use crate::Repo;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Manages the blobs in our Dit version control system \
 /// (see [`crate::blob`] for more detailed info)
 pub struct BlobMgr {
     /// Represents the blobs directory, [`BLOBS_ROOT`]
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
 }
 
 /// Constructors
 impl BlobMgr {
-    pub fn from(project: Rc<Repo>) -> Self {
+    pub fn from(project: Arc<Repo>) -> Self {
         Self { repo: project }
     }
 }

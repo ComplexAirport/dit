@@ -4,20 +4,22 @@ use crate::stage::StageMgr;
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
+use crate::ignore::IgnoreMgr;
 use crate::errors::DitResult;
 use crate::Repo;
 use std::cell::RefCell;
 use std::path::Path;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Main API for working with the Dit version control system
 pub struct Dit {
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
     pub(super) blob_mgr: RefCell<BlobMgr>,
     pub(super) tree_mgr: RefCell<TreeMgr>,
     pub(super) commit_mgr: RefCell<CommitMgr>,
     pub(super) stage_mgr: RefCell<StageMgr>,
     pub(super) branch_mgr: RefCell<BranchMgr>,
+    pub(super) ignore_mgr: RefCell<IgnoreMgr>
 }
 
 
@@ -26,7 +28,7 @@ impl Dit {
     /// Constructs the object given the project path (inside which the `.dit` is located) \
     /// Constructs all the managers
     pub fn from<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
-        let repo = Rc::new(Repo::init(project_path)?);
+        let repo = Arc::new(Repo::init(project_path)?);
 
         let dit = Self {
             repo: repo.clone(),
@@ -34,7 +36,8 @@ impl Dit {
             tree_mgr: RefCell::new(TreeMgr::from(repo.clone())),
             stage_mgr: RefCell::new(StageMgr::from(repo.clone())?),
             commit_mgr: RefCell::new(CommitMgr::from(repo.clone())),
-            branch_mgr: RefCell::new(BranchMgr::from(repo)?),
+            branch_mgr: RefCell::new(BranchMgr::from(repo.clone())?),
+            ignore_mgr: RefCell::new(IgnoreMgr::from(repo)?)
         };
 
         Ok(dit)

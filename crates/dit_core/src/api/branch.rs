@@ -17,6 +17,7 @@ impl Dit {
             &mut self.tree_mgr.borrow_mut(),
             &mut self.commit_mgr.borrow_mut(),
             &mut self.stage_mgr.borrow_mut(),
+            &mut self.ignore_mgr.borrow_mut(),
         )
     }
 

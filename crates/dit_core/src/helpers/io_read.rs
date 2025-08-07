@@ -9,8 +9,15 @@ use sha2::{Digest, Sha256};
 /// Reads a file using [`fs::read_to_string`] and maps the error to [`FsError`]
 pub fn read_to_string<P: AsRef<Path>>(path: P) -> DitResult<String> {
     let path = path.as_ref();
-    fs::read_to_string(path)
-        .map_err(|_| FsError::FileReadError(path_to_string(path)).into())
+    let mut s = fs::read_to_string(path)
+        .map_err(|_| FsError::FileReadError(path_to_string(path)))?;
+
+    // Strip the BOM if it exists
+    if s.starts_with('\u{feff}') {
+        s = s.trim_start_matches('\u{feff}').to_string();
+    }
+
+    Ok(s)
 }
 
 

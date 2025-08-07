@@ -1,7 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::{CliResult, DitCliError};
 use clap::Args;
-use dit_core::{Dit, DIT_ROOT};
+use dit_core::{Dit, dit_component_paths::DIT_ROOT};
 use crate::success;
 
 #[derive(Args)]

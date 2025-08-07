@@ -1,10 +1,6 @@
 ﻿use crate::Dit;
 use crate::errors::DitResult;
-use crate::api::models::{ChangeType, Status};
-use crate::helpers::calculate_hash;
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
+use std::path::Path;
 
 /// Manipulate the stage
 impl Dit {

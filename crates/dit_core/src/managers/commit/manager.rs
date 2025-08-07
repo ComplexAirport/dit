@@ -6,16 +6,16 @@
 //! commit, the commit message, etc.
 
 use crate::Repo;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Manages the commits in our Dit version control system
 pub struct CommitMgr {
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
 }
 
 /// Constructors
 impl CommitMgr {
-    pub fn from(repo: Rc<Repo>) -> Self {
+    pub fn from(repo: Arc<Repo>) -> Self {
         Self { repo }
     }
 }

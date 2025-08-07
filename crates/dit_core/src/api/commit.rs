@@ -37,7 +37,8 @@ impl Dit {
             commit,
             &mut self.blob_mgr.borrow_mut(),
             &mut self.tree_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut()
+            &mut self.branch_mgr.borrow_mut(),
+            &mut self.ignore_mgr.borrow_mut(),
         )
     }
 

@@ -2,8 +2,9 @@ use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::branch::BranchMgr;
-use crate::helpers::clear_dir_except;
+use crate::helpers::remove_file;
 use crate::errors::DitResult;
+use crate::managers::ignore::IgnoreMgr;
 
 impl CommitMgr {
     /// Performs a soft reset to a specific commit. Only changes the head
@@ -40,11 +41,14 @@ impl CommitMgr {
         blob_mgr: &mut BlobMgr,
         tree_mgr: &mut TreeMgr,
         branch_mgr: &mut BranchMgr,
+        ignore_mgr: &mut IgnoreMgr
     ) -> DitResult<()> {
         let commit = self.get_commit(commit.as_ref())?;
 
         // Clear the project directory to recover the target commit tree
-        clear_dir_except(self.repo.repo_path(), self.repo.ignore())?;
+        ignore_mgr.walk_dir_files(self.repo.repo_path(), |p| {
+            remove_file(p)
+        })?;
 
         tree_mgr.recover_tree(commit.tree, blob_mgr)?;
 

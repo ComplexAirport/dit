@@ -1,5 +1,5 @@
 ﻿use crate::errors::{DitResult, ProjectError};
-use crate::helpers::{path_to_string, read_to_string, resolve_absolute_path};
+use crate::helpers::{path_to_string, resolve_absolute_path};
 use super::dit_component_paths::*;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -17,7 +17,6 @@ pub struct Repo {
     branches_root: PathBuf,
     head_file: PathBuf,
     ignore_file: PathBuf,
-    ignore: Vec<PathBuf>,
 }
 
 /// Constructor
@@ -49,7 +48,9 @@ impl Repo {
         *************************/
         let stage_file = repo_path.join(STAGE_FILE);
         let head_file = repo_path.join(HEAD_FILE);
-        let component_files = [&stage_file, &head_file];
+        let component_files = [
+            &stage_file, &head_file
+        ];
 
         for component_dir in component_dirs {
             Self::init_sub_dir(component_dir)?;
@@ -60,17 +61,12 @@ impl Repo {
         }
 
         let ignore_file = repo_path.join(IGNORE_FILE);
-        let mut ignore = Self::read_ignore_file(&ignore_file)?;
-
-        for default_ignored_file in DEFAULT_IGNORED_FILES {
-            ignore.push(repo_path.join(default_ignored_file));
-        }
 
         Ok(Self {
             repo_path, dit_root, blobs_root,
             trees_root, stage_root, stage_file,
             commits_root, branches_root, head_file,
-            ignore_file, ignore
+            ignore_file
         })
     }
 
@@ -93,19 +89,6 @@ impl Repo {
                 )?;
         }
         Ok(())
-    }
-
-    fn read_ignore_file(path: &Path) -> DitResult<Vec<PathBuf>> {
-        if path.is_file() {
-            let ignore_paths: Vec<PathBuf> = read_to_string(path)?
-                .lines()
-                .map(PathBuf::from)
-                .collect();
-
-            Ok(ignore_paths)
-        } else {
-            Ok(Vec::new())
-        }
     }
 }
 
@@ -156,7 +139,10 @@ impl Repo {
         &self.head_file
     }
 
-    pub fn ignore(&self) -> &Vec<PathBuf> { &self.ignore }
+    /// Returns the [`IGNORE_FILE`] path
+    pub fn ignore_file(&self) -> &Path {
+        &self.ignore_file
+    }
 
     /// Returns the absolute path of a given relative path in the project
     pub fn get_absolute_path<P: AsRef<Path>>(&self, relative_path: P) -> DitResult<PathBuf> {

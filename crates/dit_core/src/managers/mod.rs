@@ -3,3 +3,4 @@ pub(crate) mod tree;
 pub(crate) mod commit;
 pub(crate) mod stage;
 pub(crate) mod branch;
+pub(crate) mod ignore;

@@ -4,12 +4,12 @@ use crate::helpers::calculate_hash;
 use crate::errors::DitResult;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
 
 
 impl Dit {
     /// Returns the current dit status (tracked/untracked files, etc.)
     pub fn get_status(&self) -> DitResult<Status> {
+        let ignore_mgr = self.ignore_mgr.borrow();
         let stage_mgr = self.stage_mgr.borrow();
 
         // First, get the list of the staged files
@@ -24,14 +24,9 @@ impl Dit {
             .unwrap_or_default();
 
         let mut status = Status::new();
-        for entry in WalkDir::new(self.repo.repo_path())
-            .min_depth(1)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.file_type().is_file())
-        {
-            let abs_path = entry.path().to_path_buf();
-            let rel_path = self.repo.get_relative_path(&abs_path)?;
+
+        ignore_mgr.walk_dir_files(self.repo.repo_path(), |p| {
+            let rel_path = self.repo.get_relative_path(p)?;
 
             self.three_way_comparison(
                 rel_path,
@@ -39,7 +34,9 @@ impl Dit {
                 &mut staged_files,
                 &mut status
             )?;
-        }
+
+            Ok(())
+        })?;
 
         // Now check for files left in the tree and in the stage. These files were deleted
         for rel_path in tree_files.keys() {
@@ -49,7 +46,6 @@ impl Dit {
         for rel_path in staged_files.keys() {
             status.add_tracked(rel_path.clone(), ChangeType::Deleted);
         }
-
 
         Ok(status)
     }

@@ -1,9 +1,9 @@
 use crate::Repo;
 use crate::errors::DitResult;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct BranchMgr {
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
 
     /// Represents the current branch name
     pub(super) curr_branch: Option<String>,
@@ -14,7 +14,7 @@ pub struct BranchMgr {
 
 /// Constructors
 impl BranchMgr {
-    pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
+    pub fn from(repo: Arc<Repo>) -> DitResult<Self> {
         let mut branch_mgr = Self {
             repo,
             curr_branch: None,

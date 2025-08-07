@@ -19,18 +19,18 @@
 use crate::Repo;
 use crate::errors::DitResult;
 use crate::models::Stage;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Manages the staged files. See [`crate::stage`] for more info
 pub struct StageMgr {
-    pub(super) repo: Rc<Repo>,
+    pub(super) repo: Arc<Repo>,
 
     pub(super) stage: Stage,
 }
 
 
 impl StageMgr {
-    pub fn from(repo: Rc<Repo>) -> DitResult<Self> {
+    pub fn from(repo: Arc<Repo>) -> DitResult<Self> {
         let mut mgr = Self {
             repo,
             stage: Stage::default(),

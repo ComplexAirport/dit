@@ -3,10 +3,16 @@ use crate::managers::tree::TreeMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
+use crate::managers::ignore::IgnoreMgr;
 use crate::errors::{BranchError, DitResult};
-use crate::helpers::{clear_dir_except, create_file_all, get_buf_writer, read_to_string, transfer_data, write_to_file};
+use crate::helpers::{
+    create_file_all,
+    get_buf_writer,
+    read_to_string,
+    transfer_data,
+    write_to_file
+};
 use std::collections::BTreeMap;
-
 
 /// Public
 impl BranchMgr {
@@ -52,6 +58,7 @@ impl BranchMgr {
         tree_mgr: &mut TreeMgr,
         commit_mgr: &mut CommitMgr,
         stage_mgr: &mut StageMgr,
+        ignore_mgr: &mut IgnoreMgr,
     ) -> DitResult<()> {
         let name = name.as_ref();
         let (exists, path) = self.find_branch(name);
@@ -76,7 +83,7 @@ impl BranchMgr {
         };
 
         // Remove the current project root
-        clear_dir_except(self.repo.repo_path(), [".dit"])?; // todo
+        ignore_mgr.clear_dir(self.repo.repo_path())?;
 
         for (rel_path, blob_hash) in files {
             create_file_all(&rel_path)?;
