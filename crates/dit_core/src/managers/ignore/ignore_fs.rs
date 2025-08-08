@@ -29,8 +29,9 @@ impl IgnoreMgr {
                     }
                 });
             })
+            .skip_hidden(false)
             .into_iter()
-            .filter_map(Result::ok)
+            .filter_map(|r| r.ok())
             .filter(|e| e.depth() != 0 && e.file_type().is_file())
             .try_for_each(|e| {
                 predicate(e.path())

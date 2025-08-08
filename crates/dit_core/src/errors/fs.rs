@@ -41,7 +41,13 @@ pub enum FsError {
 
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),
-    
+
     #[error("Failed to resolve the current working directory")]
     GetCwdError,
+
+    #[error("Failed to expand the glob pattern '{0}'")]
+    GlobPatternError(String),
+
+    #[error("{0}")]
+    Other(String),
 }

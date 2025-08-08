@@ -2,7 +2,6 @@ use crate::errors::DitResult;
 use crate::helpers::{create_file_all, get_buf_writer, transfer_data};
 use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
-use crate::models::Tree;
 
 impl TreeMgr {
     /// Recovers a tree given a [`Tree`] (writes all files to the project root)

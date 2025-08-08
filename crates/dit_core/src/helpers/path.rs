@@ -1,6 +1,24 @@
 ﻿use crate::errors::{DitResult, FsError};
 use std::fs;
 use std::path::{Path, PathBuf};
+use globmatch::Builder;
+
+
+/// Expands a glob to a directory list
+pub fn expand_glob<P: AsRef<Path>>(base_path: P, glob_pattern: &str)
+    -> DitResult<Vec<PathBuf>>
+{
+    let builder = Builder::new(glob_pattern)
+        .build(base_path)
+        .map_err(FsError::Other)?;
+
+    let paths: Vec<_> = builder
+        .into_iter()
+        .flatten()
+        .collect();
+
+    Ok(paths)
+}
 
 
 /// Returns the current working directory
@@ -8,6 +26,16 @@ pub fn get_cwd() -> DitResult<PathBuf> {
     std::env::current_dir()
         .map_err(|_| FsError::GetCwdError.into())
 }
+
+
+/// Converts a path to a string
+pub fn path_to_string<P: AsRef<Path>>(path: P) -> String {
+    path
+        .as_ref()
+        .to_string_lossy()
+        .to_string()
+}
+
 
 /// Resolves a given path to an absolute, canonical path.
 ///
@@ -36,12 +64,4 @@ fn normalize_path(p: PathBuf) -> PathBuf {
 #[cfg(not(windows))]
 fn normalize_path(p: PathBuf) -> PathBuf {
     p
-}
-
-
-pub fn path_to_string<P: AsRef<Path>>(path: P) -> String {
-    path
-        .as_ref()
-        .to_string_lossy()
-        .to_string()
 }

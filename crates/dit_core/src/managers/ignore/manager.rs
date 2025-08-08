@@ -3,7 +3,7 @@ use crate::errors::DitResult;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[".dit"];
+pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[/* ".dit" */];
 
 pub struct IgnoreMgr {
     pub(super) repo: Arc<Repo>,

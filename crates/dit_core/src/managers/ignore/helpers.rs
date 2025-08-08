@@ -1,7 +1,6 @@
 ﻿use crate::errors::DitResult;
-use crate::helpers::{path_to_string, read_to_string, write_to_file};
+use crate::helpers::{expand_glob, path_to_string, read_to_string, write_to_file};
 use crate::managers::ignore::manager::IgnoreMgr;
-use std::path::PathBuf;
 
 /// Read and write to the .ditignore file
 impl IgnoreMgr {
@@ -9,6 +8,7 @@ impl IgnoreMgr {
     ///
     /// [`IGNORE_FILE`]: crate::api::dit_component_paths::IGNORE_FILE
     pub(super) fn load(&mut self) -> DitResult<()> {
+        let repo_path = self.repo.repo_path();
         let ignore_file = self.repo.ignore_file();
 
         if !ignore_file.is_file() {
@@ -16,11 +16,15 @@ impl IgnoreMgr {
             return Ok(());
         }
 
-        let ignore_list: Vec<PathBuf> = read_to_string(ignore_file)?
+        let ignore_list = read_to_string(ignore_file)?
             .lines()
-            .map(|p| PathBuf::from(p.trim()))
-            .map(|p| self.repo.abs_path_from_repo(p, true))
-            .collect::<DitResult<_>>()?;
+            .map(str::trim)
+            .filter(|pat| !pat.is_empty())
+            .map(|pat| expand_glob(repo_path, pat))
+            .collect::<DitResult<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
 
         self.ignore_list = ignore_list;
 
