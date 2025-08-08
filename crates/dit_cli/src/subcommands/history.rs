@@ -1,7 +1,7 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
 use chrono::{DateTime, Local, TimeZone, Utc};
-use comfy_table::{presets::UTF8_FULL, Table, ContentArrangement};
+use comfy_table::{Table, ContentArrangement, presets::UTF8_FULL_CONDENSED};
 use clap::Args;
 
 #[derive(Args)]
@@ -28,7 +28,7 @@ impl HandleSubcommand for HistorySubcommand {
 
         let mut table = Table::new();
 
-        table.load_preset(UTF8_FULL)
+        table.load_preset(UTF8_FULL_CONDENSED)
             .set_content_arrangement(ContentArrangement::Dynamic)
             .set_header(["No", "Time", "Message", "Author",  "Hash"]);
 
