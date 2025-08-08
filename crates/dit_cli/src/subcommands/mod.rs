@@ -27,6 +27,3 @@ pub use reset::ResetSubcommand;
 
 mod clear;
 pub use clear::ClearSubcommand;
-
-mod ignore;
-pub use ignore::IgnoreSubcommand;

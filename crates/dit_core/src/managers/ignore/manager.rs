@@ -3,16 +3,13 @@ use crate::errors::DitResult;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[/* ".dit" */];
+pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[".dit"];
 
 pub struct IgnoreMgr {
     pub(super) repo: Arc<Repo>,
 
     /// List of the ignored files and directories (not the ignored patterns)
     pub(super) ignored_list: Vec<PathBuf>,
-
-    /// List of the ignored patterns
-    pub(super) ignored_patterns: Vec<String>,
 }
 
 impl IgnoreMgr {
@@ -20,7 +17,6 @@ impl IgnoreMgr {
         let mut ignore_mgr = Self {
             repo,
             ignored_list: Vec::new(),
-            ignored_patterns: Vec::new(),
         };
 
         Self::load(&mut ignore_mgr)?;

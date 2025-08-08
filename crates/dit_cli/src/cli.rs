@@ -21,7 +21,6 @@ pub enum CommandKind {
     Commit(CommitSubcommand),
     Reset(ResetSubcommand),
     Clear(ClearSubcommand),
-    Ignore(IgnoreSubcommand),
 }
 
 impl CommandKind {
@@ -36,7 +35,6 @@ impl CommandKind {
             Self::Commit(cmd) => cmd.handle(),
             Self::Reset(cmd) => cmd.handle(),
             Self::Clear(cmd) => cmd.handle(),
-            Self::Ignore(cmd) => cmd.handle(),
         }
     }
 }

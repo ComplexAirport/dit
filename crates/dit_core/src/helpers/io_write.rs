@@ -1,4 +1,4 @@
-﻿use crate::helpers::{create_file_all, path_to_string, rename_file, BUFFER_SIZE};
+﻿use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
 use crate::helpers::temp_file::create_temp_file;
 use crate::errors::{DitResult, FsError};
