@@ -5,10 +5,13 @@ use globmatch::Builder;
 
 
 /// Expands a glob to a directory list
-pub fn expand_glob<P: AsRef<Path>>(base_path: P, glob_pattern: &str)
+pub fn expand_glob<P, S>(base_path: P, glob_pattern: S)
     -> DitResult<Vec<PathBuf>>
+where
+    P: AsRef<Path>,
+    S: AsRef<str>,
 {
-    let builder = Builder::new(glob_pattern)
+    let builder = Builder::new(glob_pattern.as_ref())
         .build(base_path)
         .map_err(FsError::Other)?;
 

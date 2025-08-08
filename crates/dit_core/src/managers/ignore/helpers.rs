@@ -1,5 +1,5 @@
 ﻿use crate::errors::DitResult;
-use crate::helpers::{expand_glob, path_to_string, read_to_string, write_to_file};
+use crate::helpers::{expand_glob, path_to_string, read_to_string, remove_file, write_to_file};
 use crate::managers::ignore::manager::IgnoreMgr;
 
 /// Read and write to the .ditignore file
@@ -42,6 +42,10 @@ impl IgnoreMgr {
             .collect::<Vec<String>>()
             .join("\n");
 
+        let ignore_file = self.repo.ignore_file();
+        if ignore_file.is_file() {
+            remove_file(self.repo.ignore_file())?;
+        }
         write_to_file(
             self.repo.ignore_file(),
             content,

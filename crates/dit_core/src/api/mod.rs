@@ -5,6 +5,7 @@ mod stage;
 mod branch;
 mod status;
 mod history;
+mod ignore;
 
 pub use dit::Dit;
 pub use repo::Repo;
