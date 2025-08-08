@@ -1,5 +1,5 @@
 ﻿use crate::Dit;
-use crate::api_models::{ChangeType, Status};
+use crate::api_models::status::{ChangeType, Status};
 use crate::helpers::calculate_hash;
 use crate::errors::DitResult;
 use std::collections::BTreeMap;

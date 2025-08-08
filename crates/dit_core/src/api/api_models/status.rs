@@ -3,15 +3,15 @@
 /// Represents current staging status
 #[derive(Debug, Clone, Default)]
 pub struct Status {
-    tracked_creations: Vec<PathBuf>,
-    tracked_modifications: Vec<PathBuf>,
-    tracked_deletions: Vec<PathBuf>,
+    pub tracked_creations: Vec<PathBuf>,
+    pub tracked_modifications: Vec<PathBuf>,
+    pub tracked_deletions: Vec<PathBuf>,
 
-    unstaged_modifications: Vec<PathBuf>,
-    unstaged_deletions: Vec<PathBuf>,
+    pub unstaged_modifications: Vec<PathBuf>,
+    pub unstaged_deletions: Vec<PathBuf>,
 
-    untracked_files: Vec<PathBuf>,
-    unchanged_files: Vec<PathBuf>,
+    pub untracked_files: Vec<PathBuf>,
+    pub unchanged_files: Vec<PathBuf>,
 }
 
 /// Getters

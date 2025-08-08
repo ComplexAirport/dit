@@ -7,5 +7,5 @@ mod models;
 mod api;
 
 pub use api::{Dit, Repo};
-pub use api::models as api_models;
+pub use api::api_models;
 pub use api::dit_component_paths;

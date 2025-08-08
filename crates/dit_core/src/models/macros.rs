@@ -4,7 +4,7 @@
 /// and `DeserializationError(String)` properties. Example:
 /// `impl_read_write_model!(Tree, TreeErr)`
 ///
-/// Implements two important methods for models:
+/// Implements two important methods for api_models:
 /// 1. `write_to(&self, path: impl AsRef<Path>)` - serializes and writes the model to the given path
 /// 2. `read_from(path: impl AsRef<Path>)` - reads and deserializes the model and returns it
 #[macro_export]

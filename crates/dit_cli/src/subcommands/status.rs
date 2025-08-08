@@ -1,6 +1,6 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
-use dit_core::api_models::ChangeType;
+use dit_core::api_models::status::ChangeType;
 use clap::Args;
 use console::style;
 use dit_core::helpers::path_to_string;

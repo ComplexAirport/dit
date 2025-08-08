@@ -19,7 +19,7 @@ impl HandleSubcommand for HistorySubcommand {
         let mut dit = Self::require_dit()?;
 
         let branch_name = dit.get_branch();
-        let commits = dit.get_history(self.count)?;
+        let history = dit.get_history(self.count)?;
         let title = if let Some(branch_name) = branch_name {
             format!("History for branch '{branch_name}'")
         } else {
@@ -32,7 +32,7 @@ impl HandleSubcommand for HistorySubcommand {
             .set_content_arrangement(ContentArrangement::Dynamic)
             .set_header(["No", "Time", "Message", "Author",  "Hash"]);
 
-        for (idx, commit) in commits.into_iter().enumerate() {
+        for (idx, commit) in history.commits.into_iter().enumerate() {
             let timestamp = format_timestamp_local(commit.timestamp);
             table.add_row([
                 (idx + 1).to_string(),
