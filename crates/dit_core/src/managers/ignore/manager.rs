@@ -8,14 +8,19 @@ pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[/* ".dit" */];
 pub struct IgnoreMgr {
     pub(super) repo: Arc<Repo>,
 
-    pub(super) ignore_list: Vec<PathBuf>
+    /// List of the ignored files and directories (not the ignored patterns)
+    pub(super) ignored_list: Vec<PathBuf>,
+
+    /// List of the ignored patterns
+    pub(super) ignored_patterns: Vec<String>,
 }
 
 impl IgnoreMgr {
     pub fn from(repo: Arc<Repo>) -> DitResult<Self> {
         let mut ignore_mgr = Self {
             repo,
-            ignore_list: Vec::new()
+            ignored_list: Vec::new(),
+            ignored_patterns: Vec::new(),
         };
 
         Self::load(&mut ignore_mgr)?;

@@ -12,12 +12,14 @@ pub struct IgnoreSubcommand {
 #[derive(Subcommand)]
 pub enum IgnoreCommand {
     Add {
-        pattern: String
+        patterns: Vec<String>
     },
 
     Remove {
-        pattern: String
-    }
+        patterns: Vec<String>
+    },
+
+    List,
 }
 
 impl HandleSubcommand for IgnoreSubcommand {
@@ -25,15 +27,27 @@ impl HandleSubcommand for IgnoreSubcommand {
         let dit = Self::require_dit()?;
 
         match &self.command {
-            IgnoreCommand::Add { pattern } => {
-                dit.ignore(pattern)?;
-                success!("Added the files and directories from pattern '{pattern}' to the ignore list.");
+            IgnoreCommand::Add { patterns } => {
+                for pattern in patterns {
+                    dit.ignore(pattern)?;
+                    success!("Added '{pattern}' to the ignored list.");
+                }
                 Ok(())
             }
 
-            IgnoreCommand::Remove { pattern } => {
-                dit.unignore(pattern)?;
-                success!("Removed the files and directories from pattern '{pattern}' from the ignore list.");
+            IgnoreCommand::Remove { patterns } => {
+                for pattern in patterns {
+                    dit.unignore(pattern)?;
+                    success!("Removed '{pattern}' from the ignored list.");
+                }
+                Ok(())
+            }
+
+            IgnoreCommand::List => {
+                let ignored_list = dit.get_ignored_list()?;
+                for pattern in ignored_list.patterns {
+                    println!("{pattern}");
+                }
                 Ok(())
             }
         }

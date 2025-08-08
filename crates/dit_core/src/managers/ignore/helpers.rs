@@ -1,6 +1,6 @@
-﻿use crate::errors::DitResult;
-use crate::helpers::{expand_glob, path_to_string, read_to_string, remove_file, write_to_file};
-use crate::managers::ignore::manager::IgnoreMgr;
+﻿use crate::managers::ignore::manager::IgnoreMgr;
+use crate::helpers::{expand_glob, read_to_string, write_to_file_truncate};
+use crate::errors::DitResult;
 
 /// Read and write to the .ditignore file
 impl IgnoreMgr {
@@ -8,49 +8,49 @@ impl IgnoreMgr {
     ///
     /// [`IGNORE_FILE`]: crate::api::dit_component_paths::IGNORE_FILE
     pub(super) fn load(&mut self) -> DitResult<()> {
-        let repo_path = self.repo.repo_path();
-        let ignore_file = self.repo.ignore_file();
+        self.ignored_patterns = self.get_ignored_patterns()?;
 
-        if !ignore_file.is_file() {
-            self.ignore_list = Vec::new();
-            return Ok(());
-        }
-
-        let ignore_list = read_to_string(ignore_file)?
-            .lines()
-            .map(str::trim)
-            .filter(|pat| !pat.is_empty())
-            .map(|pat| expand_glob(repo_path, pat))
+        let ignored_list = self.ignored_patterns
+            .iter()
+            .map(|pat| expand_glob(self.repo.repo_path(), pat))
             .collect::<DitResult<Vec<_>>>()?
             .into_iter()
             .flatten()
             .collect();
 
-        self.ignore_list = ignore_list;
+        self.ignored_list = ignored_list;
 
         Ok(())
     }
+
 
     /// Stores the current ignored files and directories (from self)
     /// to [`IGNORE_FILE`]
     ///
     /// [`IGNORE_FILE`]: crate::api::dit_component_paths::IGNORE_FILE
     pub(super) fn store(&self) -> DitResult<()> {
-        let content = self.ignore_list
-            .iter()
-            .map(path_to_string)
-            .collect::<Vec<String>>()
-            .join("\n");
+        let content = self.ignored_patterns.join("\n");
 
-        let ignore_file = self.repo.ignore_file();
-        if ignore_file.is_file() {
-            remove_file(self.repo.ignore_file())?;
-        }
-        write_to_file(
+        write_to_file_truncate(
             self.repo.ignore_file(),
             content,
         )?;
 
         Ok(())
+    }
+}
+
+/// Getters
+impl IgnoreMgr {
+    /// Returns the list of the ignored patterns
+    pub fn get_ignored_patterns(&self) -> DitResult<Vec<String>> {
+        let ignore_file = self.repo.ignore_file();
+
+        Ok(read_to_string(ignore_file)?
+            .lines()
+            .map(str::trim)
+            .map(String::from)
+            .filter(|pat| !pat.is_empty())
+            .collect())
     }
 }

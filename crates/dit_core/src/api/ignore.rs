@@ -1,4 +1,5 @@
 ﻿use crate::Dit;
+use crate::api_models::ignored_patterns::IgnoredPatterns;
 use crate::errors::DitResult;
 
 impl Dit {
@@ -14,5 +15,16 @@ impl Dit {
         let glob_pat = glob_pat.as_ref();
         self.ignore_mgr.borrow_mut().remove_ignore(glob_pat)?;
         Ok(())
+    }
+}
+
+/// Getters
+impl Dit {
+    pub fn get_ignored_list(&self) -> DitResult<IgnoredPatterns> {
+        let ignored_patterns = self.ignore_mgr
+            .borrow()
+            .get_ignored_patterns()?;
+
+        Ok(IgnoredPatterns::from(ignored_patterns))
     }
 }

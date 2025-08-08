@@ -3,3 +3,4 @@
 
 pub mod status;
 pub mod history;
+pub mod ignored_patterns;

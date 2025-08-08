@@ -19,7 +19,6 @@ where
         .into_iter()
         .flatten()
         .collect();
-
     Ok(paths)
 }
 

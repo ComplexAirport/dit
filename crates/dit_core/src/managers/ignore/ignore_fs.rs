@@ -4,9 +4,10 @@ use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
 use jwalk::WalkDir;
 
+
 impl IgnoreMgr {
     pub fn is_ignored<P: AsRef<Path>>(&self, path: P) -> bool {
-        _is_ignored(path, &self.ignore_list)
+        _is_ignored(path, &self.ignored_list)
     }
 
     /// Walks a specified directory (all the files except the ignored ones)
@@ -17,13 +18,13 @@ impl IgnoreMgr {
         F: FnMut(PathBuf) -> DitResult<()>
     {
         let root = root.as_ref();
-        let ignore_list = self.ignore_list.clone();
+        let ignored_list = self.ignored_list.clone();
 
         WalkDir::new(root)
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| {
                     if let Ok(dir_entry) = child {
-                        !_is_ignored(dir_entry.path(), &ignore_list)
+                        !_is_ignored(dir_entry.path(), &ignored_list)
                     } else {
                         true
                     }
@@ -42,13 +43,13 @@ impl IgnoreMgr {
 
     /// Clears a given directory (except the ignored files)
     pub fn clear_dir<P: AsRef<Path>>(&self, root: P) -> DitResult<()> {
-        let ignore_list = self.ignore_list.clone();
+        let ignored_list = self.ignored_list.clone();
         let mut to_delete: Vec<(PathBuf, bool /* is_dir */)> = WalkDir::new(root)
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| match child {
                     Ok(entry) => {
                         if entry.file_type.is_dir() {
-                            !_is_ignored(entry.path(), &ignore_list)
+                            !_is_ignored(entry.path(), &ignored_list)
                         } else {
                             true
                         }

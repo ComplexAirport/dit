@@ -1,4 +1,4 @@
-﻿use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
+﻿use crate::helpers::{create_file_all, path_to_string, rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
 use crate::helpers::temp_file::create_temp_file;
 use crate::errors::{DitResult, FsError};
@@ -9,10 +9,34 @@ use std::path::Path;
 use sha2::{Digest, Sha256};
 
 /// Writes to a file using [`fs::write`] and maps the error to [`FsError`]
-pub fn write_to_file<P: AsRef<Path>, S: AsRef<str>>(path: P, content: S) -> DitResult<()> {
+pub fn write_to_file<P, S>(path: P, content: S) -> DitResult<()>
+where
+    P: AsRef<Path>,
+    S: AsRef<str>
+{
     let path = path.as_ref();
     fs::write(path, content.as_ref())
         .map_err(|_| FsError::FileWriteError(path_to_string(path)).into())
+}
+
+
+/// Writes to a file (by also truncating it if it existed) and maps the error
+/// to [`FsError`]
+pub fn write_to_file_truncate<P, S>(path: P, content: S) -> DitResult<()>
+where
+    P: AsRef<Path>,
+    S: AsRef<[u8]>
+{
+    let path = path.as_ref();
+    let content = content.as_ref();
+
+    let mut file = File::create(path)
+        .map_err(|_| FsError::FileCreateError(path_to_string(path)))?;
+
+    file.write_all(content)
+        .map_err(|_| FsError::FileWriteError(path_to_string(path)))?;
+
+    Ok(())
 }
 
 /// Writes to a [`BufWriter`] from a buffer and maps the error to [`FsError`]
