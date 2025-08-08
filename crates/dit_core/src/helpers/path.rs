@@ -2,6 +2,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+
+/// Returns the current working directory
+pub fn get_cwd() -> DitResult<PathBuf> {
+    std::env::current_dir()
+        .map_err(|_| FsError::GetCwdError.into())
+}
+
 /// Resolves a given path to an absolute, canonical path.
 ///
 /// - Follows symbolic links.
@@ -9,7 +16,7 @@ use std::path::{Path, PathBuf};
 /// - On Windows, strips extended-length path prefix (e.g. `\\?\C:\...`)
 pub fn resolve_absolute_path(input: &Path) -> DitResult<PathBuf> {
     let canonical = fs::canonicalize(input)
-        .map_err(|_| FsError::AbsPathResolveError(input.display().to_string()))?;
+        .map_err(|_| FsError::AbsPathResolveError(path_to_string(input)))?;
 
     Ok(normalize_path(canonical))
 }

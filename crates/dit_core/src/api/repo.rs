@@ -1,5 +1,5 @@
 ﻿use crate::errors::{DitResult, ProjectError};
-use crate::helpers::{path_to_string, resolve_absolute_path};
+use crate::helpers::{get_cwd, path_to_string, resolve_absolute_path};
 use super::dit_component_paths::*;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -23,7 +23,7 @@ pub struct Repo {
 impl Repo {
     /// Ensures all .dit components are created
     pub fn init<P: AsRef<Path>>(project_path: P) -> DitResult<Self> {
-        let repo_path = project_path.as_ref().to_path_buf();
+        let repo_path = resolve_absolute_path(project_path.as_ref())?;
 
         if !repo_path.is_dir() {
             return Err(ProjectError::ProjectPathNotADirectory(path_to_string(repo_path)).into());
@@ -144,45 +144,51 @@ impl Repo {
         &self.ignore_file
     }
 
-    /// Returns the absolute path of a given relative path in the project
-    pub fn get_absolute_path<P: AsRef<Path>>(&self, relative_path: P) -> DitResult<PathBuf> {
-        let path = relative_path.as_ref();
-        if self.includes_path(path) {
-            Ok(resolve_absolute_path(path)?)
-        } else {
-            Err(ProjectError::FileNotInProject(path_to_string(path)).into())
-        }
-    }
-
-    /// Returns the absolute path of a given relative path which is guaranteed
-    /// to be a correct relative path by the user
-    pub fn get_absolute_path_unchecked<P: AsRef<Path>>(&self, relative_path: P) -> PathBuf {
-        self.repo_path.join(relative_path)
-    }
-
-    /// Returns the path of a given path relative to the project path. \
-    /// For example, if the project path is `D:\Projects\project1\` and the given path is
-    /// `D:\Projects\project1\src\main.py`, this method will return `src\main.py`
-    pub fn get_relative_path<P: AsRef<Path>>(&self, path: P) -> DitResult<PathBuf> {
+    /// Returns the absolute path of a given path.
+    /// 1. If the given path is relative, it will be considered relative to project path
+    /// 2. If the given file is absolute, nothing will change
+    pub fn abs_path_from_repo<P: AsRef<Path>>(&self, path: P, missing_ok: bool) -> DitResult<PathBuf> {
         let path = path.as_ref();
-        if self.includes_path(path) {
-            Ok(path
-                .strip_prefix(self.repo_path())
-                .unwrap()
-                .to_path_buf())
+        if path.is_absolute() {
+            Ok(path.to_path_buf())
         } else {
-            Err(ProjectError::FileNotInProject(path_to_string(path)).into())
+            let res = self.repo_path.join(path);
+            if !res.exists() && !missing_ok {
+                Err(ProjectError::NotInProject(path_to_string(path)).into())
+            } else {
+                Ok(res)
+            }
         }
     }
 
-    /// Checks whether a given path is inside the project
-    pub fn includes_path<P: AsRef<Path>>(&self, path: P) -> bool {
+    /// Returns the absolute path of a given path.
+    /// 1. If the given path is relative, it will be considered relative to the current working
+    ///    directory
+    /// 2. If the given file is absolute, nothing will change
+    pub fn abs_path_from_cwd<P: AsRef<Path>>(&self, path: P, missing_ok: bool) -> DitResult<PathBuf> {
         let path = path.as_ref();
-        if !path.exists() {
-            return false;
+        if path.is_absolute() {
+            Ok(path.to_path_buf())
+        } else {
+            if !missing_ok {
+                resolve_absolute_path(path)
+            } else {
+                Ok(get_cwd()?.join(path))
+            }
         }
-        let abs_project_path = resolve_absolute_path(self.repo_path()).unwrap();
-        let abs_path = resolve_absolute_path(path).unwrap();
-        abs_path.starts_with(abs_project_path)
+    }
+
+    /// Returns the relative path (relative to the project path) of a given path
+    ///
+    /// NOTE: If the given path is relative, it will be considered relative to the
+    /// current working directory. Returns an error if the project does not contain such a path
+    pub fn rel_path<P: AsRef<Path>>(&self, path: P) -> DitResult<PathBuf> {
+        let path = path.as_ref();
+        let abs_path = self.abs_path_from_cwd(path, false)?;
+
+        match abs_path.strip_prefix(&self.repo_path) {
+            Ok(p) => Ok(p.to_path_buf()),
+            Err(_) => Err(ProjectError::NotInProject(path_to_string(path)).into())
+        }
     }
 }

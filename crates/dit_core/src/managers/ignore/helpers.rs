@@ -19,7 +19,7 @@ impl IgnoreMgr {
         let ignore_list: Vec<PathBuf> = read_to_string(ignore_file)?
             .lines()
             .map(|p| PathBuf::from(p.trim()))
-            .map(|p| self.repo.get_absolute_path(p))
+            .map(|p| self.repo.abs_path_from_repo(p, true))
             .collect::<DitResult<_>>()?;
 
         self.ignore_list = ignore_list;

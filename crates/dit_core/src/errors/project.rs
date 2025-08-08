@@ -3,9 +3,9 @@ use thiserror::Error;
 /// General dit project-related errors
 #[derive(Error, Debug)]
 pub enum ProjectError {
-    #[error("The file '{0}' is not inside the project")]
-    FileNotInProject(String),
-
+    #[error("Not inside the project: '{0}'")]
+    NotInProject(String),
+    
     #[error("The given project path '{0}' is not a directory")]
     ProjectPathNotADirectory(String),
 

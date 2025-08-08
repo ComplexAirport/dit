@@ -20,7 +20,7 @@ impl TreeMgr {
         for (rel_path, blob_hash) in files {
             let mut reader = blob_mgr.get_blob_reader(blob_hash)?;
 
-            let abs_path = self.repo.get_absolute_path_unchecked(rel_path);
+            let abs_path = self.repo.abs_path_from_repo(rel_path, true)?;
             create_file_all(&abs_path)?;
             let mut writer = get_buf_writer(&abs_path)?;
 

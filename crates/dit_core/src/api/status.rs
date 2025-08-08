@@ -25,11 +25,9 @@ impl Dit {
 
         let mut status = Status::new();
 
-        ignore_mgr.walk_dir_files(self.repo.repo_path(), |p| {
-            let rel_path = self.repo.get_relative_path(p)?;
-
+        ignore_mgr.walk_dir_files(self.repo.repo_path(), |abs_path| {
             self.three_way_comparison(
-                rel_path,
+                abs_path,
                 &mut tree_files,
                 &mut staged_files,
                 &mut status
@@ -57,11 +55,13 @@ impl Dit {
     /// change in the [`Status`]
     fn three_way_comparison(
         &self,
-        rel_path: PathBuf,
+        abs_path: PathBuf,
         tree_files: &mut BTreeMap<PathBuf, String>,
         staged_files: &mut BTreeMap<PathBuf, PathBuf>,
         status: &mut Status,
     ) -> DitResult<()> {
+        let rel_path = self.repo.rel_path(&abs_path)?;
+
         let in_stage = staged_files.remove(&rel_path);
         let in_tree = tree_files.remove(&rel_path);
 
@@ -69,18 +69,21 @@ impl Dit {
             Some(tree_blob_hash) => match in_stage {
                 // In Tree, in Stage
                 Some(stage_blob_path) => {
-                    self._in_stage_in_tree(rel_path, tree_blob_hash, &stage_blob_path, status)?;
+                    self._in_stage_in_tree(
+                        abs_path, rel_path, tree_blob_hash, &stage_blob_path, status)?;
                 }
                 // In Tree, not in Stage
                 None => {
-                    self._not_in_stage_in_tree(rel_path, tree_blob_hash, status)?;
+                    self._not_in_stage_in_tree(
+                        abs_path, rel_path, tree_blob_hash, status)?;
                 }
             }
 
             None => match in_stage {
                 // In Stage, not in Tree
                 Some(stage_blob_path) => {
-                    self._in_stage_not_in_tree(rel_path, stage_blob_path, status)?;
+                    self._in_stage_not_in_tree(
+                        abs_path, rel_path, stage_blob_path, status)?;
                 }
                 // Not in Tree, not in Stage
                 None => {
@@ -98,6 +101,7 @@ impl Dit {
 impl Dit {
     fn _in_stage_in_tree(
         &self,
+        abs_path: PathBuf,
         rel_path: PathBuf,
         tree_blob_hash: &String,
         stage_blob_path: &Path,
@@ -109,7 +113,7 @@ impl Dit {
             .to_string_lossy()
             .to_string();
 
-        let new_blob_hash = calculate_hash(&rel_path)?;
+        let new_blob_hash = calculate_hash(abs_path)?;
 
         if *tree_blob_hash != stage_blob_hash {
             status.add_tracked(rel_path.clone(), ChangeType::Modified);
@@ -128,6 +132,7 @@ impl Dit {
 
     fn _in_stage_not_in_tree(
         &self,
+        abs_path: PathBuf,
         rel_path: PathBuf,
         stage_blob_path: PathBuf,
         status: &mut Status,
@@ -138,7 +143,7 @@ impl Dit {
             .to_string_lossy()
             .to_string();
 
-        let new_blob_hash = calculate_hash(&rel_path)?;
+        let new_blob_hash = calculate_hash(abs_path)?;
 
         if stage_blob_hash != new_blob_hash {
             status.add_tracked(rel_path.clone(), ChangeType::New);
@@ -152,11 +157,12 @@ impl Dit {
 
     fn _not_in_stage_in_tree(
         &self,
+        abs_path: PathBuf,
         rel_path: PathBuf,
         tree_blob_hash: &String,
         status: &mut Status,
     ) -> DitResult<()> {
-        let new_blob_hash = calculate_hash(&rel_path)?;
+        let new_blob_hash = calculate_hash(abs_path)?;
 
         if new_blob_hash != *tree_blob_hash {
             status.add_untracked(rel_path, ChangeType::Modified);

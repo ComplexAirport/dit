@@ -41,4 +41,7 @@ pub enum FsError {
 
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),
+    
+    #[error("Failed to resolve the current working directory")]
+    GetCwdError,
 }
