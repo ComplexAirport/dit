@@ -8,6 +8,7 @@ impl Dit {
     pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
         self.stage_mgr.borrow_mut().stage_file(
             path,
+            &self.blob_mgr.borrow(),
             &self.tree_mgr.borrow(),
             &self.commit_mgr.borrow(),
             &self.branch_mgr.borrow(),
@@ -21,6 +22,8 @@ impl Dit {
 
     /// Clears the stage
     pub fn clear_stage(&mut self) -> DitResult<()> {
-        self.stage_mgr.borrow_mut().clear_stage(true)
+        self.stage_mgr.borrow_mut().clear_stage_all(
+            &self.blob_mgr.borrow()
+        )
     }
 }

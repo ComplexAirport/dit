@@ -6,6 +6,7 @@ use crate::errors::{DitResult, OtherError};
 use crate::models::{Commit, Stage};
 use sha2::{Digest, Sha256};
 use std::time::SystemTime;
+use crate::managers::blob::BlobMgr;
 
 /// Public
 impl CommitMgr {
@@ -14,6 +15,7 @@ impl CommitMgr {
         &mut self,
         author: S1,
         message: S2,
+        blob_mgr: &BlobMgr,
         tree_mgr: &mut TreeMgr,
         stage_mgr: &mut StageMgr,
         branch_mgr: &mut BranchMgr,
@@ -27,13 +29,11 @@ impl CommitMgr {
         let message = message.into();
 
         let commit_hash = self.create_commit_inner(
-            author, message, stage_mgr.get_stage(), parent, tree_mgr
+            author, message, stage_mgr.get_stage(), parent, blob_mgr, tree_mgr,
         )?;
 
         branch_mgr.set_head_commit(commit_hash)?;
-        stage_mgr.clear_stage(false)?;
-
-        Ok(())
+        stage_mgr.clear_stage_file()
     }
 }
 
@@ -48,7 +48,8 @@ impl CommitMgr {
         message: String,
         stage: &Stage,
         parent_commit_hash: Option<String>,
-        tree_mgr: &mut TreeMgr,
+        blob_mgr: &BlobMgr,
+        tree_mgr: &TreeMgr,
     ) -> DitResult<String> {
         let parent_tree_hash = if let Some(parent_commit_hash) = &parent_commit_hash {
             let parent_commit = self.get_commit(parent_commit_hash)?;
@@ -57,7 +58,7 @@ impl CommitMgr {
             None
         };
 
-        let tree_hash = tree_mgr.create_tree(stage, parent_tree_hash)?;
+        let tree_hash = tree_mgr.create_tree(stage, parent_tree_hash, blob_mgr)?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)

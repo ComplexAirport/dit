@@ -68,7 +68,7 @@ impl BranchMgr {
         }
 
         if is_hard {
-            self.prepare_stage_for_switch_hard(stage_mgr)?;
+            self.prepare_stage_for_switch_hard(blob_mgr, stage_mgr)?;
         } else { // todo: change this behavior?
             self.prepare_stage_for_switch_soft(name, stage_mgr)?;
         }
@@ -103,10 +103,14 @@ impl BranchMgr {
 /// Private
 impl BranchMgr {
     /// Resets the stage if it's not empty
-    pub(super) fn prepare_stage_for_switch_hard(&self, stage_mgr: &mut StageMgr) -> DitResult<()>
+    pub(super) fn prepare_stage_for_switch_hard(
+        &self,
+        blob_mgr: &BlobMgr,
+        stage_mgr: &mut StageMgr
+    ) -> DitResult<()>
     {
         if stage_mgr.is_staged() {
-            stage_mgr.clear_stage(true)?;
+            stage_mgr.clear_stage_all(blob_mgr)?;
         }
         Ok(())
     }

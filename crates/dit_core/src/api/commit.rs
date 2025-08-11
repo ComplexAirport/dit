@@ -1,6 +1,5 @@
 ﻿use crate::Dit;
 use crate::errors::DitResult;
-use crate::models::Commit;
 
 /// Manipulate commits
 impl Dit {
@@ -11,6 +10,7 @@ impl Dit {
         self.commit_mgr.borrow_mut().create_commit(
             author,
             message,
+            &self.blob_mgr.borrow(),
             &mut self.tree_mgr.borrow_mut(),
             &mut self.stage_mgr.borrow_mut(),
             &mut self.branch_mgr.borrow_mut(),

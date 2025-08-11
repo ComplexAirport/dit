@@ -1,6 +1,6 @@
+use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
 use crate::models::{ChangeType, ModifiedFile, NewFile, Stage, Tree};
-use crate::helpers::rename_file;
 use crate::errors::DitResult;
 use std::collections::BTreeMap;
 use sha2::{Digest, Sha256};
@@ -10,7 +10,8 @@ impl TreeMgr {
     pub fn create_tree(
         &self,
         stage: &Stage,
-        parent_tree_hash: Option<String>
+        parent_tree_hash: Option<String>,
+        blob_mgr: &BlobMgr,
     ) -> DitResult<String>
     {
         // we will operate on the collection of files sorted by their relative paths
@@ -26,16 +27,12 @@ impl TreeMgr {
         for (rel_path, change) in &stage.files {
             match change {
                 ChangeType::New(NewFile { hash }) => {
-                    let source_file = self.repo.stage().join(hash);
-                    let target_file = self.repo.blobs().join(hash);
-                    rename_file(source_file, target_file)?;
+                    blob_mgr.commit_temp_blob(hash.clone())?;
                     files.insert(rel_path.clone(), hash.clone());
                 }
 
                 ChangeType::Modified(ModifiedFile { new_hash, ..}) => {
-                    let source_file = self.repo.stage().join(new_hash);
-                    let target_file = self.repo.blobs().join(new_hash);
-                    rename_file(source_file, target_file)?;
+                    blob_mgr.commit_temp_blob(new_hash.clone())?;
                     files.insert(rel_path.clone(), new_hash.clone());
                 }
 

@@ -3,9 +3,10 @@ use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
 use crate::errors::DitResult;
-use crate::helpers::{copy_file, remove_file};
+use crate::helpers::remove_file;
 use crate::models::{ChangeType, ModifiedFile, NewFile};
 use std::path::Path;
+use crate::managers::blob::BlobMgr;
 
 impl StageMgr {
     /// Stages a file based on its path. IMPORTANT: files in the
@@ -15,6 +16,7 @@ impl StageMgr {
     pub fn stage_file<P: AsRef<Path>>(
         &mut self,
         file_path: P,
+        blob_mgr: &BlobMgr,
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
         branch_mgr: &BranchMgr
@@ -24,12 +26,11 @@ impl StageMgr {
 
         match &change {
             ChangeType::New(NewFile { hash, .. }) => {
-                let target_dir = self.repo.stage().join(hash);
-                copy_file(file_path, &target_dir)?;
+                blob_mgr.create_temp_blob_with_hash(file_path, hash.clone())?;
+
             }
             ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
-                let target_dir = self.repo.stage().join(new_hash);
-                copy_file(file_path, &target_dir)?;
+                blob_mgr.create_temp_blob_with_hash(file_path, new_hash.clone())?;
             }
 
             _ => {}
@@ -72,32 +73,29 @@ impl StageMgr {
         Ok(())
     }
 
-    /// Clears all staged files and clears the [`STAGE_FILE`]
-    ///
-    /// - `remove_files` - specifies whether to remove files from the filesystem or only
-    ///   update the inner state and the stage file
+    /// Clears the [`STAGE_FILE`] and inner cache
     ///
     /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
-    pub fn clear_stage(&mut self, remove_files: bool) -> DitResult<()> {
-        if remove_files {
-            for change in self.stage.files.values() {
-                match change {
-                    ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
-                        let temp_blob_path = self.repo.blobs().join(new_hash);
-                        remove_file(&temp_blob_path)?;
-                    }
-
-                    ChangeType::New(NewFile { hash, .. }) => {
-                        let temp_blob_path = self.repo.blobs().join(hash);
-                        remove_file(&temp_blob_path)?;
-                    }
-
-                    _ => {}
-                }
-            }
-        }
+    pub fn clear_stage_file(&mut self) -> DitResult<()> {
         self.stage.files.clear();
         self.update_stage_file()?;
         Ok(())
+    }
+
+    /// Clears the [`STAGE_FILE`] and inner cache and removes the temporary blobs
+    pub fn clear_stage_all(&mut self, blob_mgr: &BlobMgr) -> DitResult<()> {
+        for change in self.stage.files.values() {
+            match change {
+                ChangeType::Modified(ModifiedFile { new_hash, .. }) =>
+                    blob_mgr.remove_temp_blob(new_hash.clone())?,
+
+                ChangeType::New(NewFile { hash, .. }) =>
+                    blob_mgr.remove_temp_blob(hash.clone())?,
+
+                _ => {}
+            }
+        }
+
+        self.clear_stage_file()
     }
 }

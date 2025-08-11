@@ -77,8 +77,7 @@ impl StageMgr {
 
         let in_tree = branch_mgr
             .get_head_tree(tree_mgr, commit_mgr)?
-            .map(|mut t| t.files.remove(rel_path))
-            .flatten();
+            .and_then(|mut t| t.files.remove(rel_path));
 
         let in_stage = self.stage.files.get(rel_path);
 
