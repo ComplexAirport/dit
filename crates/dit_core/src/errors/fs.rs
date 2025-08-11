@@ -39,6 +39,9 @@ pub enum FsError {
     #[error("Failed to rename the file '{0}' to '{1}'")]
     FileRenameError(String, String),
 
+    #[error("Failed to copy the file '{0}' to '{1}'")]
+    FileCopyError(String, String),
+
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),
 

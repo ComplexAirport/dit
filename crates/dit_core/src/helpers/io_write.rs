@@ -1,4 +1,4 @@
-﻿use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
+﻿use crate::helpers::{get_buf_reader, path_to_string, rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
 use crate::helpers::temp_file::create_temp_file;
 use crate::errors::{DitResult, FsError};
@@ -71,6 +71,21 @@ pub fn transfer_data<P: AsRef<Path>>(
         write_to_buf_writer(writer, &buffer[..n], filename)?;
     }
 
+    Ok(())
+}
+
+
+/// Copies the content of a given file to the given destination
+pub fn copy_file<P, Q>(src: P, dest: Q) -> DitResult<()>
+where
+    P: AsRef<Path>,
+    Q: AsRef<Path>
+{
+    let src = src.as_ref();
+    let dest = dest.as_ref();
+    let mut reader = get_buf_reader(src)?;
+    let mut writer = get_buf_writer(dest)?;
+    transfer_data(&mut reader, &mut writer, src)?;
     Ok(())
 }
 

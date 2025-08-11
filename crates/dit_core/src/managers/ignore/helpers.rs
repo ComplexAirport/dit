@@ -10,7 +10,7 @@ impl IgnoreMgr {
     pub(super) fn load(&mut self) -> DitResult<()> {
         let ignored_list = read_to_string(self.repo.ignore_file())?
             .lines()
-            .map(|line| line.trim())
+            .filter(|line| !line.trim().is_empty())
             .map(|pat| expand_glob(self.repo.repo_path(), pat))
             .collect::<DitResult<Vec<_>>>()?
             .into_iter()

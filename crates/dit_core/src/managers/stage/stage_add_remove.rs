@@ -1,6 +1,10 @@
 use crate::managers::stage::StageMgr;
+use crate::managers::branch::BranchMgr;
+use crate::managers::commit::CommitMgr;
+use crate::managers::tree::TreeMgr;
 use crate::errors::DitResult;
-use crate::helpers::{copy_with_hash_as_name, get_buf_reader, remove_file};
+use crate::helpers::{copy_file, remove_file};
+use crate::models::{ChangeType, ModifiedFile, NewFile};
 use std::path::Path;
 
 impl StageMgr {
@@ -8,17 +12,33 @@ impl StageMgr {
     /// stage folder have their names as their content hashes.
     /// This way, the blob hash doesn't have to be recomputed
     /// when the file is commited
-    pub fn stage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
-        let reader = get_buf_reader(&file_path)?;
+    pub fn stage_file<P: AsRef<Path>>(
+        &mut self,
+        file_path: P,
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
+        branch_mgr: &BranchMgr
+    ) -> DitResult<()> {
+        let rel_path = self.repo.rel_path(&file_path)?;
+        let (change, _) = self.get_changes(&rel_path, tree_mgr, commit_mgr, branch_mgr)?;
 
-        let hash = copy_with_hash_as_name(reader, self.repo.stage())?;
-        let staged_file_path = self.repo.stage().join(&hash);
+        match &change {
+            ChangeType::New(NewFile { hash, .. }) => {
+                let target_dir = self.repo.stage().join(hash);
+                copy_file(file_path, &target_dir)?;
+            }
+            ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
+                let target_dir = self.repo.stage().join(new_hash);
+                copy_file(file_path, &target_dir)?;
+            }
 
-        let file_path = self.repo.rel_path(file_path)?;
-        self.stage
-            .files
-            .insert(file_path.to_path_buf(), staged_file_path);
-        self.update_stage_file()?;
+            _ => {}
+        }
+
+        if !matches!(change, ChangeType::Unchanged) {
+            self.stage.files.insert(rel_path, change);
+            self.update_stage_file()?;
+        }
 
         Ok(())
     }
@@ -26,12 +46,25 @@ impl StageMgr {
     /// Unstages a file based on its path
     pub fn unstage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
         let file_path = file_path.as_ref();
-        let relative_path = self.repo.abs_path_from_cwd(file_path, false)?;
+        let rel_path = self.repo.abs_path_from_cwd(file_path, false)?;
 
-        let staged_path = self.stage.files.remove(&relative_path);
+        let staged_path = self.stage.files.remove(&rel_path);
 
-        if let Some(staged_path) = staged_path {
-            remove_file(&staged_path)?;
+        if let Some(change) = staged_path {
+            match change {
+                ChangeType::New(file) => {
+                    let temp_blob_path = self.repo.stage().join(file.hash);
+                    remove_file(&temp_blob_path)?;
+                }
+
+                ChangeType::Modified(file) => {
+                    let temp_blob_path = self.repo.stage().join(file.new_hash);
+                    remove_file(&temp_blob_path)?;
+                }
+
+                ChangeType::Deleted(_) => {}
+                ChangeType::Unchanged => {}
+            }
         }
 
         self.update_stage_file()?;
@@ -47,9 +80,19 @@ impl StageMgr {
     /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     pub fn clear_stage(&mut self, remove_files: bool) -> DitResult<()> {
         if remove_files {
-            for path in self.stage.files.values() {
-                if path.is_file() {
-                    remove_file(path)?;
+            for change in self.stage.files.values() {
+                match change {
+                    ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
+                        let temp_blob_path = self.repo.blobs().join(new_hash);
+                        remove_file(&temp_blob_path)?;
+                    }
+
+                    ChangeType::New(NewFile { hash, .. }) => {
+                        let temp_blob_path = self.repo.blobs().join(hash);
+                        remove_file(&temp_blob_path)?;
+                    }
+
+                    _ => {}
                 }
             }
         }

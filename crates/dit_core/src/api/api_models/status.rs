@@ -1,4 +1,6 @@
-﻿use std::path::PathBuf;
+﻿use crate::models::ChangeType as CoreChangeType;
+use std::path::PathBuf;
+
 
 /// Represents current staging status
 #[derive(Debug, Clone, Default)]
@@ -91,4 +93,15 @@ pub enum ChangeType {
     Modified,
     Deleted,
     New,
+}
+
+impl ChangeType {
+    pub(crate) fn from(change_type: CoreChangeType) -> ChangeType {
+        match change_type {
+            CoreChangeType::New(_) => ChangeType::New,
+            CoreChangeType::Modified(_) => ChangeType::Modified,
+            CoreChangeType::Deleted(_) => ChangeType::Deleted,
+            CoreChangeType::Unchanged => unreachable!()
+        }
+    }
 }

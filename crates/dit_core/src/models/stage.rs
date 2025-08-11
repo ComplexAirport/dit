@@ -6,5 +6,35 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Stage {
     /// Maps relative paths of staged files to their blob hashes
-    pub files: BTreeMap<PathBuf, PathBuf>,
+    ///
+    /// NOTE: the [`ChangeType`] here cannot be [`ChangeType::Unchanged`]
+    pub files: BTreeMap<PathBuf, ChangeType>,
+}
+
+
+/// This enum represents a change type
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ChangeType {
+    New(NewFile),
+    Modified(ModifiedFile),
+    Deleted(DeletedFile),
+    Unchanged,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewFile {
+    pub rel_path: PathBuf,
+    pub hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModifiedFile {
+    pub rel_path: PathBuf,
+    pub old_hash: String,
+    pub new_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeletedFile {
+    pub rel_path: PathBuf,
 }

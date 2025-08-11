@@ -1,8 +1,11 @@
-use crate::errors::{DitResult, StagingError};
-use crate::helpers::{read_to_string, write_to_file};
+use crate::managers::tree::TreeMgr;
 use crate::managers::stage::StageMgr;
-use crate::models::Stage;
-
+use crate::managers::branch::BranchMgr;
+use crate::managers::commit::CommitMgr;
+use crate::helpers::{calculate_hash, read_to_string, write_to_file};
+use crate::models::{NewFile, ChangeType, DeletedFile, ModifiedFile, Stage};
+use crate::errors::{DitResult, StagingError};
+use std::path::{Path, PathBuf};
 
 /// Manage the stage file
 impl StageMgr {
@@ -48,5 +51,110 @@ impl StageMgr {
 
     pub fn get_stage(&self) -> &Stage {
         &self.stage
+    }
+
+
+    /// Returns the untracked and tracked changes of a file \
+    /// The first element in the result tuple represents the untracked changes,
+    /// and the second element represents the tracked changes
+    pub fn get_changes<P>(
+        &self,
+        rel_path: P,
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
+        branch_mgr: &BranchMgr,
+    ) -> DitResult<(ChangeType /* Untracked change */, ChangeType /* Tracked change */)>
+    where P: AsRef<Path>,
+    {
+        let rel_path = rel_path.as_ref();
+        let abs_path = self.repo.abs_path_from_repo(rel_path, true)?;
+
+        let current_hash = if abs_path.is_file() {
+            Some(calculate_hash(&abs_path)?)
+        } else {
+            None
+        };
+
+        let in_tree = branch_mgr
+            .get_head_tree(tree_mgr, commit_mgr)?
+            .map(|mut t| t.files.remove(rel_path))
+            .flatten();
+
+        let in_stage = self.stage.files.get(rel_path);
+
+        let untracked_change = self.three_way_comparison(
+            rel_path.to_path_buf(), current_hash, in_tree, in_stage);
+
+        let tracked_change = match in_stage {
+            None => ChangeType::Unchanged,
+            Some(change) => change.clone()
+        };
+
+        Ok((untracked_change, tracked_change))
+    }
+}
+
+/// Private
+impl StageMgr {
+    /// Returns a possible untracked change of a file
+    fn three_way_comparison(
+        &self,
+        rel_path: PathBuf,
+        current: Option<String>,
+        in_tree: Option<String>,
+        in_stage: Option<&ChangeType>
+    ) -> ChangeType {
+        match current {
+            None => match in_stage {
+                None => match in_tree {
+                    None => ChangeType::Unchanged,
+                    Some(_) => ChangeType::Deleted(DeletedFile { rel_path })
+                }
+
+                Some(_) => ChangeType::Deleted(DeletedFile { rel_path })
+            }
+            Some(hash) => match in_stage {
+                None => match in_tree {
+                    None => ChangeType::New(NewFile { rel_path, hash }),
+                    Some(old_hash) =>
+                        if old_hash == hash {
+                            ChangeType::Unchanged
+                        } else {
+                            ChangeType::Modified(ModifiedFile {
+                                rel_path,
+                                old_hash,
+                                new_hash: hash,
+                            })
+                        }
+                }
+
+                Some(change) => match change {
+                    ChangeType::Unchanged => ChangeType::Unchanged,
+                    ChangeType::Deleted(_) => ChangeType::New(NewFile { rel_path, hash }),
+                    ChangeType::Modified(file) => {
+                        if file.new_hash == hash {
+                            ChangeType::Unchanged
+                        } else {
+                            ChangeType::Modified(ModifiedFile {
+                                rel_path,
+                                old_hash: file.old_hash.clone(),
+                                new_hash: hash,
+                            })
+                        }
+                    }
+                    ChangeType::New(file) => {
+                        if file.hash == hash {
+                            ChangeType::Unchanged
+                        } else {
+                            ChangeType::Modified(ModifiedFile {
+                                rel_path,
+                                old_hash: file.hash.clone(),
+                                new_hash: hash,
+                            })
+                        }
+                    }
+                }
+            }
+        }
     }
 }

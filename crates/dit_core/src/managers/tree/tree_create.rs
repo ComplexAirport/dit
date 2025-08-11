@@ -1,9 +1,8 @@
 use crate::managers::tree::TreeMgr;
-use crate::models::{Stage, Tree};
+use crate::models::{ChangeType, DeletedFile, ModifiedFile, NewFile, Stage, Tree};
 use crate::helpers::rename_file;
 use crate::errors::DitResult;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 use sha2::{Digest, Sha256};
 
 impl TreeMgr {
@@ -18,21 +17,34 @@ impl TreeMgr {
         // this will prevent tree hash inconsistencies across systems and prevent the tree
         // hash being dependent on traversal order
 
-        let mut files: BTreeMap<PathBuf, String> = if let Some(parent_tree) = parent_tree_hash {
+        let mut files = if let Some(parent_tree) = parent_tree_hash {
             self.get_tree(parent_tree)?.files
         } else {
             BTreeMap::new()
         };
 
-        for (relative_path, temp_blob_path) in &stage.files {
-            let blob_hash = temp_blob_path.file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string();
+        for change in stage.files.values() {
+            match change {
+                ChangeType::New(NewFile { rel_path, hash }) => {
+                    let source_file = self.repo.stage().join(hash);
+                    let target_file = self.repo.blobs().join(hash);
+                    rename_file(source_file, target_file)?;
+                    files.insert(rel_path.clone(), hash.clone());
+                }
 
-            let target_file = self.repo.blobs().join(&blob_hash);
-            rename_file(temp_blob_path, &target_file)?;
-            files.insert(relative_path.clone(), blob_hash);
+                ChangeType::Modified(ModifiedFile { rel_path, new_hash, ..}) => {
+                    let source_file = self.repo.stage().join(new_hash);
+                    let target_file = self.repo.blobs().join(new_hash);
+                    rename_file(source_file, target_file)?;
+                    files.insert(rel_path.clone(), new_hash.clone());
+                }
+
+                ChangeType::Deleted(DeletedFile { rel_path }) => {
+                    files.remove(rel_path);
+                },
+
+                _ => {}
+            }
         }
 
         let mut hasher = Sha256::new();

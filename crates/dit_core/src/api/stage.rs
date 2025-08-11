@@ -6,7 +6,12 @@ use std::path::Path;
 impl Dit {
     /// Stages a file given the file path
     pub fn stage<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
-        self.stage_mgr.borrow_mut().stage_file(path)
+        self.stage_mgr.borrow_mut().stage_file(
+            path,
+            &self.tree_mgr.borrow(),
+            &self.commit_mgr.borrow(),
+            &self.branch_mgr.borrow(),
+        )
     }
 
     /// Unstages the file given the file path

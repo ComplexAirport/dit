@@ -1,48 +1,60 @@
 ﻿use crate::Dit;
-use crate::api_models::status::{ChangeType, Status};
-use crate::helpers::calculate_hash;
+use crate::managers::branch::BranchMgr;
+use crate::managers::commit::CommitMgr;
+use crate::managers::stage::StageMgr;
+use crate::managers::tree::TreeMgr;
+use crate::models::ChangeType;
+use crate::api_models::status::{ChangeType as ApiChangeType, Status};
 use crate::errors::DitResult;
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-
+use std::path::PathBuf;
 
 impl Dit {
     /// Returns the current dit status (tracked/untracked files, etc.)
     pub fn get_status(&self) -> DitResult<Status> {
         let ignore_mgr = self.ignore_mgr.borrow();
         let stage_mgr = self.stage_mgr.borrow();
+        let tree_mgr = self.tree_mgr.borrow();
+        let commit_mgr = self.commit_mgr.borrow();
+        let branch_mgr = self.branch_mgr.borrow();
 
         // First, get the list of the staged files
         let mut staged_files = stage_mgr.get_stage().files.clone();
 
         // Then, get the previous tree files
-        let tree = self.branch_mgr.borrow().get_head_tree(
-            &self.tree_mgr.borrow(),
-            &self.commit_mgr.borrow(),
-        )?;
-        let mut tree_files = tree.map(|t| t.files)
-            .unwrap_or_default();
+        let tree = self.branch_mgr.borrow().get_head_tree(&tree_mgr, &commit_mgr)?;
+        let mut tree_files = tree.map(|t| t.files).unwrap_or_default();
 
         let mut status = Status::new();
-
         ignore_mgr.walk_dir_files(self.repo.repo_path(), |abs_path| {
-            self.three_way_comparison(
-                abs_path,
-                &mut tree_files,
-                &mut staged_files,
-                &mut status
+            let rel_path = self.repo.rel_path(&abs_path)?;
+            tree_files.remove(&rel_path);
+            staged_files.remove(&rel_path);
+            self.register_changes(
+                rel_path, &mut status,
+                &tree_mgr, &commit_mgr,
+                &stage_mgr, &branch_mgr,
             )?;
-
             Ok(())
         })?;
 
         // Now check for files left in the tree and in the stage. These files were deleted
         for rel_path in tree_files.keys() {
-            status.add_untracked(rel_path.clone(), ChangeType::Deleted);
+            self.register_changes(
+                rel_path, &mut status,
+                &tree_mgr, &commit_mgr,
+                &stage_mgr, &branch_mgr,
+            )?;
         }
 
         for rel_path in staged_files.keys() {
-            status.add_tracked(rel_path.clone(), ChangeType::Deleted);
+            self.register_changes(
+                rel_path,
+                &mut status,
+                &tree_mgr,
+                &commit_mgr,
+                &stage_mgr,
+                &branch_mgr,
+            )?;
         }
 
         Ok(status)
@@ -51,133 +63,28 @@ impl Dit {
 
 /// Private
 impl Dit {
-    /// Compares a file in HEAD tree, stage and in current status, and makes a corresponding
-    /// change in the [`Status`]
-    fn three_way_comparison(
+    fn register_changes<P: Into<PathBuf>>(
         &self,
-        abs_path: PathBuf,
-        tree_files: &mut BTreeMap<PathBuf, String>,
-        staged_files: &mut BTreeMap<PathBuf, PathBuf>,
+        rel_path: P,
         status: &mut Status,
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
+        stage_mgr: &StageMgr,
+        branch_mgr: &BranchMgr,
     ) -> DitResult<()> {
-        let rel_path = self.repo.rel_path(&abs_path)?;
+        let rel_path = rel_path.into();
+        let (untracked, tracked) = stage_mgr.get_changes(
+            rel_path.clone(), tree_mgr, commit_mgr, branch_mgr
+        )?;
 
-        let in_stage = staged_files.remove(&rel_path);
-        let in_tree = tree_files.remove(&rel_path);
+        if !matches!(untracked, ChangeType::Unchanged) {
+            status.add_untracked(rel_path.clone(), ApiChangeType::from(untracked));
+        }
 
-        match &in_tree {
-            Some(tree_blob_hash) => match in_stage {
-                // In Tree, in Stage
-                Some(stage_blob_path) => {
-                    self._in_stage_in_tree(
-                        abs_path, rel_path, tree_blob_hash, &stage_blob_path, status)?;
-                }
-                // In Tree, not in Stage
-                None => {
-                    self._not_in_stage_in_tree(
-                        abs_path, rel_path, tree_blob_hash, status)?;
-                }
-            }
-
-            None => match in_stage {
-                // In Stage, not in Tree
-                Some(stage_blob_path) => {
-                    self._in_stage_not_in_tree(
-                        abs_path, rel_path, stage_blob_path, status)?;
-                }
-                // Not in Tree, not in Stage
-                None => {
-                    self._not_in_stage_not_in_tree(rel_path, status);
-                }
-            }
+        if !matches!(tracked, ChangeType::Unchanged) {
+            status.add_tracked(rel_path, ApiChangeType::from(tracked));
         }
 
         Ok(())
-    }
-}
-
-
-/// Private
-impl Dit {
-    fn _in_stage_in_tree(
-        &self,
-        abs_path: PathBuf,
-        rel_path: PathBuf,
-        tree_blob_hash: &String,
-        stage_blob_path: &Path,
-        status: &mut Status,
-    ) -> DitResult<()> {
-        let stage_blob_hash = stage_blob_path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-
-        let new_blob_hash = calculate_hash(abs_path)?;
-
-        if *tree_blob_hash != stage_blob_hash {
-            status.add_tracked(rel_path.clone(), ChangeType::Modified);
-        }
-
-        if new_blob_hash != stage_blob_hash {
-            status.add_untracked(rel_path.clone(), ChangeType::Modified);
-        }
-
-        if new_blob_hash == *tree_blob_hash && new_blob_hash == stage_blob_hash {
-            status.add_unchanged(rel_path);
-        }
-
-        Ok(())
-    }
-
-    fn _in_stage_not_in_tree(
-        &self,
-        abs_path: PathBuf,
-        rel_path: PathBuf,
-        stage_blob_path: PathBuf,
-        status: &mut Status,
-    ) -> DitResult<()> {
-        let stage_blob_hash = stage_blob_path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-
-        let new_blob_hash = calculate_hash(abs_path)?;
-
-        if stage_blob_hash != new_blob_hash {
-            status.add_tracked(rel_path.clone(), ChangeType::New);
-            status.add_untracked(rel_path, ChangeType::Modified);
-        } else {
-            status.add_tracked(rel_path, ChangeType::New);
-        }
-
-        Ok(())
-    }
-
-    fn _not_in_stage_in_tree(
-        &self,
-        abs_path: PathBuf,
-        rel_path: PathBuf,
-        tree_blob_hash: &String,
-        status: &mut Status,
-    ) -> DitResult<()> {
-        let new_blob_hash = calculate_hash(abs_path)?;
-
-        if new_blob_hash != *tree_blob_hash {
-            status.add_untracked(rel_path, ChangeType::Modified);
-        } else {
-            status.add_unchanged(rel_path);
-        }
-
-        Ok(())
-    }
-
-    fn _not_in_stage_not_in_tree(
-        &self,
-        rel_path: PathBuf,
-        status: &mut Status,
-    ) {
-        status.add_untracked(rel_path, ChangeType::New);
     }
 }
