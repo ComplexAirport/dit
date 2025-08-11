@@ -1,5 +1,5 @@
 use crate::managers::tree::TreeMgr;
-use crate::models::{ChangeType, DeletedFile, ModifiedFile, NewFile, Stage, Tree};
+use crate::models::{ChangeType, ModifiedFile, NewFile, Stage, Tree};
 use crate::helpers::rename_file;
 use crate::errors::DitResult;
 use std::collections::BTreeMap;
@@ -23,23 +23,23 @@ impl TreeMgr {
             BTreeMap::new()
         };
 
-        for change in stage.files.values() {
+        for (rel_path, change) in &stage.files {
             match change {
-                ChangeType::New(NewFile { rel_path, hash }) => {
+                ChangeType::New(NewFile { hash }) => {
                     let source_file = self.repo.stage().join(hash);
                     let target_file = self.repo.blobs().join(hash);
                     rename_file(source_file, target_file)?;
                     files.insert(rel_path.clone(), hash.clone());
                 }
 
-                ChangeType::Modified(ModifiedFile { rel_path, new_hash, ..}) => {
+                ChangeType::Modified(ModifiedFile { new_hash, ..}) => {
                     let source_file = self.repo.stage().join(new_hash);
                     let target_file = self.repo.blobs().join(new_hash);
                     rename_file(source_file, target_file)?;
                     files.insert(rel_path.clone(), new_hash.clone());
                 }
 
-                ChangeType::Deleted(DeletedFile { rel_path }) => {
+                ChangeType::Deleted => {
                     files.remove(rel_path);
                 },
 

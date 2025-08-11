@@ -17,24 +17,17 @@ pub struct Stage {
 pub enum ChangeType {
     New(NewFile),
     Modified(ModifiedFile),
-    Deleted(DeletedFile),
+    Deleted,
     Unchanged,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewFile {
-    pub rel_path: PathBuf,
     pub hash: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModifiedFile {
-    pub rel_path: PathBuf,
     pub old_hash: String,
     pub new_hash: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DeletedFile {
-    pub rel_path: PathBuf,
 }

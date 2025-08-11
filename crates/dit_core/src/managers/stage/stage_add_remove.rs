@@ -62,7 +62,7 @@ impl StageMgr {
                     remove_file(&temp_blob_path)?;
                 }
 
-                ChangeType::Deleted(_) => {}
+                ChangeType::Deleted => {}
                 ChangeType::Unchanged => {}
             }
         }

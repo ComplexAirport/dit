@@ -2,10 +2,10 @@ use crate::managers::tree::TreeMgr;
 use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
+use crate::models::{NewFile, ChangeType, ModifiedFile, Stage};
 use crate::helpers::{calculate_hash, read_to_string, write_to_file};
-use crate::models::{NewFile, ChangeType, DeletedFile, ModifiedFile, Stage};
 use crate::errors::{DitResult, StagingError};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Manage the stage file
 impl StageMgr {
@@ -82,8 +82,7 @@ impl StageMgr {
 
         let in_stage = self.stage.files.get(rel_path);
 
-        let untracked_change = self.three_way_comparison(
-            rel_path.to_path_buf(), current_hash, in_tree, in_stage);
+        let untracked_change = self.three_way_comparison(current_hash, in_tree, in_stage);
 
         let tracked_change = match in_stage {
             None => ChangeType::Unchanged,
@@ -99,7 +98,6 @@ impl StageMgr {
     /// Returns a possible untracked change of a file
     fn three_way_comparison(
         &self,
-        rel_path: PathBuf,
         current: Option<String>,
         in_tree: Option<String>,
         in_stage: Option<&ChangeType>
@@ -108,35 +106,30 @@ impl StageMgr {
             None => match in_stage {
                 None => match in_tree {
                     None => ChangeType::Unchanged,
-                    Some(_) => ChangeType::Deleted(DeletedFile { rel_path })
+                    Some(_) => ChangeType::Deleted
                 }
 
-                Some(_) => ChangeType::Deleted(DeletedFile { rel_path })
+                Some(_) => ChangeType::Deleted
             }
             Some(hash) => match in_stage {
                 None => match in_tree {
-                    None => ChangeType::New(NewFile { rel_path, hash }),
+                    None => ChangeType::New(NewFile { hash }),
                     Some(old_hash) =>
                         if old_hash == hash {
                             ChangeType::Unchanged
                         } else {
-                            ChangeType::Modified(ModifiedFile {
-                                rel_path,
-                                old_hash,
-                                new_hash: hash,
-                            })
+                            ChangeType::Modified(ModifiedFile { old_hash, new_hash: hash, })
                         }
                 }
 
                 Some(change) => match change {
                     ChangeType::Unchanged => ChangeType::Unchanged,
-                    ChangeType::Deleted(_) => ChangeType::New(NewFile { rel_path, hash }),
+                    ChangeType::Deleted => ChangeType::New(NewFile { hash }),
                     ChangeType::Modified(file) => {
                         if file.new_hash == hash {
                             ChangeType::Unchanged
                         } else {
                             ChangeType::Modified(ModifiedFile {
-                                rel_path,
                                 old_hash: file.old_hash.clone(),
                                 new_hash: hash,
                             })
@@ -147,7 +140,6 @@ impl StageMgr {
                             ChangeType::Unchanged
                         } else {
                             ChangeType::Modified(ModifiedFile {
-                                rel_path,
                                 old_hash: file.hash.clone(),
                                 new_hash: hash,
                             })

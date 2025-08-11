@@ -100,7 +100,7 @@ impl ChangeType {
         match change_type {
             CoreChangeType::New(_) => ChangeType::New,
             CoreChangeType::Modified(_) => ChangeType::Modified,
-            CoreChangeType::Deleted(_) => ChangeType::Deleted,
+            CoreChangeType::Deleted => ChangeType::Deleted,
             CoreChangeType::Unchanged => unreachable!()
         }
     }
