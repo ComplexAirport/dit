@@ -14,10 +14,6 @@ impl TreeMgr {
         blob_mgr: &BlobMgr,
     ) -> DitResult<String>
     {
-        // we will operate on the collection of files sorted by their relative paths
-        // this will prevent tree hash inconsistencies across systems and prevent the tree
-        // hash being dependent on traversal order
-
         let mut files = if let Some(parent_tree) = parent_tree_hash {
             self.get_tree(parent_tree)?.files
         } else {

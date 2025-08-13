@@ -10,14 +10,14 @@ impl Dit {
         }
 
         let mut commits = Vec::new();
-        let mut head_commit = self.branch_mgr.borrow().get_head_commit().cloned();
+        let mut head_commit = self.branch_mgr()?.borrow().get_head_commit().cloned();
 
         while let Some(head) = &head_commit {
             if count == 0 {
                 break;
             }
 
-            let commit = self.commit_mgr.borrow().get_commit(head)?;
+            let commit = self.commit_mgr().borrow().get_commit(head)?;
             head_commit = commit.parents.first().cloned();
             commits.push(commit);
 

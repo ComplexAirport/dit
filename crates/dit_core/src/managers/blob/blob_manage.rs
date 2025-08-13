@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::BufReader;
 use crate::managers::blob::BlobMgr;
 use crate::helpers::{copy_file, copy_with_hash_as_name, get_buf_reader, remove_file, rename_file};
 use crate::errors::DitResult;
@@ -43,5 +45,12 @@ impl BlobMgr {
         rename_file(source, target)?;
 
         Ok(())
+    }
+
+    /// Returns the blob content reader based on it's hash
+    pub fn get_blob_reader<S: Into<String>>(&self, hash: S) -> DitResult<BufReader<File>> {
+        let path = self.repo.blobs().join(hash.into());
+        let reader = get_buf_reader(&path)?;
+        Ok(reader)
     }
 }

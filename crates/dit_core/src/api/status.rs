@@ -11,17 +11,17 @@ use std::path::PathBuf;
 impl Dit {
     /// Returns the current dit status (tracked/untracked files, etc.)
     pub fn get_status(&self) -> DitResult<Status> {
-        let ignore_mgr = self.ignore_mgr.borrow();
-        let stage_mgr = self.stage_mgr.borrow();
-        let tree_mgr = self.tree_mgr.borrow();
-        let commit_mgr = self.commit_mgr.borrow();
-        let branch_mgr = self.branch_mgr.borrow();
+        let ignore_mgr = self.ignore_mgr()?.borrow();
+        let stage_mgr = self.stage_mgr()?.borrow();
+        let tree_mgr = self.tree_mgr().borrow();
+        let commit_mgr = self.commit_mgr().borrow();
+        let branch_mgr = self.branch_mgr()?.borrow();
 
         // First, get the list of the staged files
         let mut staged_files = stage_mgr.get_stage().files.clone();
 
         // Then, get the previous tree files
-        let tree = self.branch_mgr.borrow().get_head_tree(&tree_mgr, &commit_mgr)?;
+        let tree = branch_mgr.get_head_tree(&tree_mgr, &commit_mgr)?;
         let mut tree_files = tree.map(|t| t.files).unwrap_or_default();
 
         let mut status = Status::new();

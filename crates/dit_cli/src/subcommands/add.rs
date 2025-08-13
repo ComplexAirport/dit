@@ -17,7 +17,7 @@ impl HandleSubcommand for AddSubcommand {
 
         for file in &self.files {
             let abs_path = resolve_absolute_path(file)?;
-            dit.stage(&abs_path)?;
+            dit.stage_file(&abs_path)?;
             success!("Added '{}' to the staged files", file.display());
         }
 

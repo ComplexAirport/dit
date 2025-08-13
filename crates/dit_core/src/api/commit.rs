@@ -7,13 +7,13 @@ impl Dit {
     pub fn commit<S1: Into<String>, S2: Into<String>>(&mut self, author: S1, message: S2)
                                                       -> DitResult<()>
     {
-        self.commit_mgr.borrow_mut().create_commit(
+        self.commit_mgr().borrow_mut().create_commit(
             author,
             message,
-            &self.blob_mgr.borrow(),
-            &mut self.tree_mgr.borrow_mut(),
-            &mut self.stage_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut(),
+            &self.blob_mgr().borrow(),
+            &mut self.tree_mgr().borrow_mut(),
+            &mut self.stage_mgr()?.borrow_mut(),
+            &mut self.branch_mgr()?.borrow_mut(),
         )
     }
 
@@ -21,11 +21,11 @@ impl Dit {
     /// that commit tree stay the same.
     pub fn mixed_reset<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()>
     {
-        self.commit_mgr.borrow_mut().mixed_reset(
+        self.commit_mgr().borrow_mut().mixed_reset(
             commit,
-            &mut self.blob_mgr.borrow_mut(),
-            &mut self.tree_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut()
+            &mut self.blob_mgr().borrow_mut(),
+            &mut self.tree_mgr().borrow_mut(),
+            &mut self.branch_mgr()?.borrow_mut()
         )
     }
 
@@ -33,18 +33,18 @@ impl Dit {
     /// to exactly match the target commit tree (except the ignored files)
     pub fn hard_reset<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()>
     {
-        self.commit_mgr.borrow_mut().hard_reset(
+        self.commit_mgr().borrow_mut().hard_reset(
             commit,
-            &mut self.blob_mgr.borrow_mut(),
-            &mut self.tree_mgr.borrow_mut(),
-            &mut self.branch_mgr.borrow_mut(),
-            &mut self.ignore_mgr.borrow_mut(),
+            &mut self.blob_mgr().borrow_mut(),
+            &mut self.tree_mgr().borrow_mut(),
+            &mut self.branch_mgr()?.borrow_mut(),
+            &mut self.ignore_mgr()?.borrow_mut(),
         )
     }
 
     /// Performs a soft reset to a specific commit. Only changes the head pointer and leaves
     /// the files untouched
     pub fn soft_reset<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
-        self.commit_mgr.borrow_mut().soft_reset(commit, &mut self.branch_mgr.borrow_mut())
+        self.commit_mgr().borrow_mut().soft_reset(commit, &mut self.branch_mgr()?.borrow_mut())
     }
 }

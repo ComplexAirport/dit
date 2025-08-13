@@ -18,7 +18,7 @@ impl HandleSubcommand for HistorySubcommand {
     fn handle(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
 
-        let branch_name = dit.get_branch();
+        let branch_name = dit.get_branch()?;
         let history = dit.get_history(self.count)?;
         let title = if let Some(branch_name) = branch_name {
             format!("History for branch '{branch_name}'")

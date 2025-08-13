@@ -2,11 +2,11 @@ use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
+use crate::managers::blob::BlobMgr;
 use crate::errors::DitResult;
 use crate::helpers::remove_file;
 use crate::models::{ChangeType, ModifiedFile, NewFile};
 use std::path::Path;
-use crate::managers::blob::BlobMgr;
 
 impl StageMgr {
     /// Stages a file based on its path. IMPORTANT: files in the

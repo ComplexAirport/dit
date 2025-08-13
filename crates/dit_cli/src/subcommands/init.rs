@@ -20,7 +20,7 @@ impl HandleSubcommand for InitSubcommand {
 
         // default behavior:
         // if no head branch is found, a default "main" branch will be created
-        if dit.get_branch().is_none() {
+        if dit.get_branch()?.is_none() {
             dit.create_branch("main")?;
         }
 

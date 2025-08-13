@@ -169,12 +169,10 @@ impl Repo {
         let path = path.as_ref();
         if path.is_absolute() {
             Ok(path.to_path_buf())
+        } else if !missing_ok {
+            resolve_absolute_path(path)
         } else {
-            if !missing_ok {
-                resolve_absolute_path(path)
-            } else {
-                Ok(get_cwd()?.join(path))
-            }
+            Ok(get_cwd()?.join(path))
         }
     }
 

@@ -16,7 +16,7 @@ impl HandleSubcommand for UnstageSubcommand {
         let mut dit = Self::require_dit()?;
         for file in &self.files {
             let abs_path = resolve_absolute_path(file)?;
-            dit.unstage(&abs_path)?;
+            dit.unstage_file(&abs_path)?;
             success!("Unstaged the file `{}`", file.display());
         }
         Ok(())
