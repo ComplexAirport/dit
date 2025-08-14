@@ -5,9 +5,9 @@ use std::path::Path;
 /// Manipulate the stage
 impl Dit {
     /// Stages a file given the file path
-    pub fn stage_file<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
+    pub fn stage_file(&mut self, path: &Path) -> DitResult<()> {
         self.stage_mgr()?.borrow_mut().stage_file(
-            path,
+            &path,
             &self.blob_mgr().borrow(),
             &self.tree_mgr().borrow(),
             &self.commit_mgr().borrow(),
@@ -16,7 +16,7 @@ impl Dit {
     }
 
     /// Unstages the file given the file path
-    pub fn unstage_file<P: AsRef<Path>>(&mut self, path: P) -> DitResult<()> {
+    pub fn unstage_file(&mut self, path: &Path) -> DitResult<()> {
         self.stage_mgr()?.borrow_mut().unstage_file(path)
     }
 

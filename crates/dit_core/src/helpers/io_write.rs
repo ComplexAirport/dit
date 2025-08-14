@@ -1,12 +1,14 @@
-﻿use crate::helpers::{get_buf_reader, path_to_string, rename_file, BUFFER_SIZE};
+﻿//! Superfast functions for IO writing operations
+
+use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
 use crate::helpers::io_read::read_from_buf_reader;
 use crate::helpers::temp_file::create_temp_file;
-use crate::errors::{DitResult, FsError};
+use crate::helpers::hashing::HashingWriter;
+use crate::errors::{DitResult, FsError, OtherError};
 use std::fs;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::Path;
-use sha2::{Digest, Sha256};
 
 /// Writes to a file using [`fs::write`] and maps the error to [`FsError`]
 pub fn write_to_file<P, S>(path: P, content: S) -> DitResult<()>
@@ -14,29 +16,8 @@ where
     P: AsRef<Path>,
     S: AsRef<str>
 {
-    let path = path.as_ref();
-    fs::write(path, content.as_ref())
+    fs::write(&path, content.as_ref())
         .map_err(|_| FsError::FileWriteError(path_to_string(path)).into())
-}
-
-
-/// Writes to a file (by also truncating it if it existed) and maps the error
-/// to [`FsError`]
-pub fn write_to_file_truncate<P, S>(path: P, content: S) -> DitResult<()>
-where
-    P: AsRef<Path>,
-    S: AsRef<[u8]>
-{
-    let path = path.as_ref();
-    let content = content.as_ref();
-
-    let mut file = File::create(path)
-        .map_err(|_| FsError::FileCreateError(path_to_string(path)))?;
-
-    file.write_all(content)
-        .map_err(|_| FsError::FileWriteError(path_to_string(path)))?;
-
-    Ok(())
 }
 
 /// Writes to a [`BufWriter`] from a buffer and maps the error to [`FsError`]
@@ -53,15 +34,27 @@ pub fn write_to_buf_writer<P: AsRef<Path>>(
 }
 
 
+
+/// Copies the content of a given file to the given destination
+pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()>
+{
+    fs::copy(&src, &dest)
+        .map_err(|_| FsError::FileCopyError(
+            path_to_string(src),
+            path_to_string(dest)
+        ))?;
+    Ok(())
+}
+
+
 /// Reads data from [`BufReader`] and writes to a [`BufWriter`] mapping the error to
 /// [`FsError`]
-pub fn transfer_data<P: AsRef<Path>>(
+pub fn copy_file_buffered(
     reader: &mut BufReader<File>,
     writer: &mut BufWriter<File>,
-    filename: P,
+    filename: &Path,
 ) -> DitResult<()>
 {
-    let filename = filename.as_ref();
     let mut buffer = [0; BUFFER_SIZE];
     loop {
         let n = read_from_buf_reader(reader, &mut buffer, filename)?;
@@ -71,78 +64,56 @@ pub fn transfer_data<P: AsRef<Path>>(
         write_to_buf_writer(writer, &buffer[..n], filename)?;
     }
 
-    Ok(())
-}
-
-
-/// Copies the content of a given file to the given destination
-pub fn copy_file<P, Q>(src: P, dest: Q) -> DitResult<()>
-where
-    P: AsRef<Path>,
-    Q: AsRef<Path>
-{
-    let src = src.as_ref();
-    let dest = dest.as_ref();
-    let mut reader = get_buf_reader(src)?;
-    let mut writer = get_buf_writer(dest)?;
-    transfer_data(&mut reader, &mut writer, src)?;
     Ok(())
 }
 
 
 /// Reads data from [`BufReader`] and writes to a [`BufWriter`] mapping the error to
 /// [`FsError`] while also calculating the content hash. Returns the hash.
-pub fn transfer_data_hashed<P: AsRef<Path>>(
-    reader: &mut BufReader<File>,
-    writer: &mut BufWriter<File>,
-    filename: P,
-) -> DitResult<String>
+pub fn copy_file_hashed(src: &Path, dest_path: &Path, dest_file: File) -> DitResult<String>
 {
-    let filename = filename.as_ref();
-    let mut buffer = [0; BUFFER_SIZE];
-    let mut hasher = Sha256::new();
-    loop {
-        let n = read_from_buf_reader(reader, &mut buffer, filename)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buffer[..n]);
-        write_to_buf_writer(writer, &buffer[..n], filename)?;
-    }
-    let hash = format!("{:x}", hasher.finalize());
+    let src_file = File::open(src)
+        .map_err(|_| FsError::FileOpenError(path_to_string(src)))?;
 
-    Ok(hash)
-}
+    let mut reader = BufReader::with_capacity(BUFFER_SIZE, src_file);
 
-/// Creates and returns a [`BufWriter`] given a target path and
-/// maps the error to [`FsError`].
-///
-/// Note: creates the file if it doesn't exist and overrides it if it does
-pub fn get_buf_writer<P: AsRef<Path>>(path: P) -> DitResult<BufWriter<File>> {
-    let path = path.as_ref();
-    File::create(path)
-        .map(BufWriter::new)
-        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
+    let writer = BufWriter::with_capacity(BUFFER_SIZE, dest_file);
+    let mut hasher = HashingWriter::new(writer);
+
+    io::copy(&mut reader, &mut hasher)
+        .map_err(|_| FsError::FileCopyError(
+            path_to_string(src),
+            path_to_string(dest_path)
+        ))?;
+
+    hasher.flush()
+        .map_err(|_| OtherError::BufferFlushError)?;
+
+    Ok(hasher.finalize_string())
 }
 
 
 /// Copies a file to a new destination and sets the new file's name
 /// as its hash. Returns the hash.
-pub fn copy_with_hash_as_name<P>(mut file: BufReader<File>, dest: P)
-    -> DitResult<String>
-where
-    P: AsRef<Path>,
+pub fn copy_with_hash_as_name(src: &Path, dest_path: &Path) -> DitResult<String>
 {
-    let dest = dest.as_ref();
+    let (temp_file, temp_file_path) = create_temp_file(dest_path)?;
+    let hash = copy_file_hashed(src, &temp_file_path, temp_file)?;
+    let dest = dest_path.join(&hash);
 
-    let (temp_file, temp_file_path) = create_temp_file(dest)?;
-
-    let mut writer = BufWriter::new(temp_file);
-
-    let hash = transfer_data_hashed(&mut file, &mut writer, &temp_file_path)?;
-    let dest_file = dest.join(&hash);
-
-    rename_file(temp_file_path, dest_file)?;
+    rename_file(&temp_file_path, &dest)?;
 
     Ok(hash)
+}
+
+
+
+/// Creates and returns a [`BufWriter`] given a target path and
+/// maps the error to [`FsError`].
+///
+/// Note: creates the file if it doesn't exist and overrides it if it does
+pub fn get_buf_writer(path: &Path) -> DitResult<BufWriter<File>> {
+    File::create(path)
+        .map(BufWriter::new)
+        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
 }

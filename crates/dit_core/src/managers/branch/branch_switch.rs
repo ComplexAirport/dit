@@ -5,13 +5,7 @@ use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::ignore::IgnoreMgr;
 use crate::errors::{BranchError, DitResult};
-use crate::helpers::{
-    create_file_all,
-    get_buf_writer,
-    read_to_string,
-    transfer_data,
-    write_to_file
-};
+use crate::helpers::{create_file_all, read_to_string, write_to_file, copy_file};
 use std::collections::BTreeMap;
 
 /// Public
@@ -74,7 +68,7 @@ impl BranchMgr {
         }
 
         // Get the commit tree
-        let target_commit_hash = read_to_string(path)?;
+        let target_commit_hash = read_to_string(&path)?;
         let files = if target_commit_hash.is_empty() {
             BTreeMap::new()
         } else {
@@ -87,9 +81,8 @@ impl BranchMgr {
 
         for (rel_path, blob_hash) in files {
             create_file_all(&rel_path)?;
-            let mut blob_reader = blob_mgr.get_blob_reader(blob_hash)?;
-            let mut writer = get_buf_writer(&rel_path)?;
-            transfer_data(&mut blob_reader, &mut writer, rel_path)?;
+            let src = blob_mgr.get_blob_path(blob_hash);
+            copy_file(&src, &rel_path)?;
         }
 
         self.set_head_commit(target_commit_hash)?;

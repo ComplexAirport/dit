@@ -147,16 +147,15 @@ impl Repo {
     /// Returns the absolute path of a given path.
     /// 1. If the given path is relative, it will be considered relative to project path
     /// 2. If the given file is absolute, nothing will change
-    pub fn abs_path_from_repo<P: AsRef<Path>>(&self, path: P, missing_ok: bool) -> DitResult<PathBuf> {
-        let path = path.as_ref();
+    pub fn abs_path_from_repo(&self, path: &Path, missing_ok: bool) -> DitResult<PathBuf> {
         if path.is_absolute() {
             Ok(path.to_path_buf())
         } else {
             let res = self.repo_path.join(path);
-            if !res.exists() && !missing_ok {
-                Err(ProjectError::NotInProject(path_to_string(path)).into())
-            } else {
+            if missing_ok || res.exists() {
                 Ok(res)
+            } else  {
+                Err(ProjectError::NotInProject(path_to_string(path)).into())
             }
         }
     }

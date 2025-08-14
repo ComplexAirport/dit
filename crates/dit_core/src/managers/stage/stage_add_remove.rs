@@ -4,7 +4,7 @@ use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
 use crate::managers::blob::BlobMgr;
 use crate::errors::DitResult;
-use crate::helpers::remove_file;
+use crate::helpers::remove_file_if_exists;
 use crate::models::{ChangeType, ModifiedFile, NewFile};
 use std::path::Path;
 
@@ -13,9 +13,9 @@ impl StageMgr {
     /// stage folder have their names as their content hashes.
     /// This way, the blob hash doesn't have to be recomputed
     /// when the file is commited
-    pub fn stage_file<P: AsRef<Path>>(
+    pub fn stage_file(
         &mut self,
-        file_path: P,
+        file_path: &Path,
         blob_mgr: &BlobMgr,
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
@@ -26,11 +26,11 @@ impl StageMgr {
 
         match &change {
             ChangeType::New(NewFile { hash, .. }) => {
-                blob_mgr.create_temp_blob_with_hash(file_path, hash.clone())?;
+                blob_mgr.create_temp_blob_with_hash(&file_path, hash.clone())?;
 
             }
             ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
-                blob_mgr.create_temp_blob_with_hash(file_path, new_hash.clone())?;
+                blob_mgr.create_temp_blob_with_hash(&file_path, new_hash.clone())?;
             }
 
             _ => {}
@@ -55,12 +55,12 @@ impl StageMgr {
             match change {
                 ChangeType::New(file) => {
                     let temp_blob_path = self.repo.stage().join(file.hash);
-                    remove_file(&temp_blob_path)?;
+                    remove_file_if_exists(&temp_blob_path)?;
                 }
 
                 ChangeType::Modified(file) => {
                     let temp_blob_path = self.repo.stage().join(file.new_hash);
-                    remove_file(&temp_blob_path)?;
+                    remove_file_if_exists(&temp_blob_path)?;
                 }
 
                 ChangeType::Deleted => {}

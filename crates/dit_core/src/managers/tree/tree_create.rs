@@ -3,7 +3,7 @@ use crate::managers::tree::TreeMgr;
 use crate::models::{ChangeType, ModifiedFile, NewFile, Stage, Tree};
 use crate::errors::DitResult;
 use std::collections::BTreeMap;
-use sha2::{Digest, Sha256};
+use crate::helpers::DitHasher;
 
 impl TreeMgr {
     /// Creates a tree from a stage and returns the tree hash
@@ -11,7 +11,7 @@ impl TreeMgr {
         &self,
         stage: &Stage,
         parent_tree_hash: Option<String>,
-        blob_mgr: &BlobMgr,
+        blob_mgr: &BlobMgr
     ) -> DitResult<String>
     {
         let mut files = if let Some(parent_tree) = parent_tree_hash {
@@ -20,15 +20,20 @@ impl TreeMgr {
             BTreeMap::new()
         };
 
+        let mut hasher = DitHasher::new();
         for (rel_path, change) in &stage.files {
             match change {
                 ChangeType::New(NewFile { hash }) => {
                     blob_mgr.commit_temp_blob(hash.clone())?;
+                    hasher.update(rel_path.to_string_lossy().as_bytes());
+                    hasher.update(hash.as_bytes());
                     files.insert(rel_path.clone(), hash.clone());
                 }
 
                 ChangeType::Modified(ModifiedFile { new_hash, ..}) => {
                     blob_mgr.commit_temp_blob(new_hash.clone())?;
+                    hasher.update(rel_path.to_string_lossy().as_bytes());
+                    hasher.update(new_hash.as_bytes());
                     files.insert(rel_path.clone(), new_hash.clone());
                 }
 
@@ -40,17 +45,13 @@ impl TreeMgr {
             }
         }
 
-        let mut hasher = Sha256::new();
-        for (path, blob_hash) in &files {
-            hasher.update(path.to_string_lossy().as_bytes());
-            hasher.update(blob_hash);
-        }
-        let hash = format!("{:x}", hasher.finalize());
+        let hash = hasher.finalize_string();
 
         let tree = Tree {
             files,
             hash: hash.clone(),
         };
+
         self.write_tree(&tree)?;
 
         Ok(hash)

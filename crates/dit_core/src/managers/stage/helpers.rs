@@ -3,7 +3,7 @@ use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::models::{NewFile, ChangeType, ModifiedFile, Stage};
-use crate::helpers::{calculate_hash, read_to_string, write_to_file};
+use crate::helpers::{hash_file, read_to_string, write_to_file};
 use crate::errors::{DitResult, StagingError};
 use std::path::Path;
 
@@ -57,20 +57,18 @@ impl StageMgr {
     /// Returns the untracked and tracked changes of a file \
     /// The first element in the result tuple represents the untracked changes,
     /// and the second element represents the tracked changes
-    pub fn get_changes<P>(
+    pub fn get_changes(
         &self,
-        rel_path: P,
+        rel_path: &Path,
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
         branch_mgr: &BranchMgr,
     ) -> DitResult<(ChangeType /* Untracked change */, ChangeType /* Tracked change */)>
-    where P: AsRef<Path>,
     {
-        let rel_path = rel_path.as_ref();
         let abs_path = self.repo.abs_path_from_repo(rel_path, true)?;
 
         let current_hash = if abs_path.is_file() {
-            Some(calculate_hash(&abs_path)?)
+            Some(hash_file(&abs_path)?)
         } else {
             None
         };

@@ -1,28 +1,29 @@
 ﻿use crate::helpers::path_to_string;
 use crate::errors::{DitResult, FsError};
-use std::fs;
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::Path;
+use std::io;
 
-/// Removes a file using [`fs::remove_file`] and maps the error to [`FsError`]
-pub fn remove_file<P: AsRef<Path>>(path: P) -> DitResult<()> {
-    let path = path.as_ref();
-    fs::remove_file(path)
-        .map_err(|_| FsError::FileRemoveError(path_to_string(path)).into())
+/// Removes a file using [`fs::remove_file`] if it exists
+/// and maps the error to [`FsError`]
+pub fn remove_file_if_exists(path: &Path) -> DitResult<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(_) => Err(FsError::FileRemoveError(path_to_string(path)).into()),
+    }
 }
 
 
 /// Removes a directory using [`fs::remove_dir`] and maps the error to [`FsError`]
-pub fn remove_dir<P: AsRef<Path>>(path: P) -> DitResult<()> {
-    let path = path.as_ref();
+pub fn remove_dir(path: &Path) -> DitResult<()> {
     fs::remove_dir_all(path)
         .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
 }
 
 
 /// Removes a directory using [`fs::remove_dir_all`] and maps the error to [`FsError`]
-pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
-    let path = path.as_ref();
+pub fn remove_dir_all(path: &Path) -> DitResult<()> {
     fs::remove_dir_all(path)
         .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
 }
@@ -30,16 +31,10 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
 
 /// Creates a file and all the necessary subdirectories (if they don't exist) and maps
 /// the result to [`FsError`]
-pub fn create_file_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
-    let path = path.as_ref();
-
-    if path.is_file() {
-        return Ok(());
-    }
-
+pub fn create_file_all(path: &Path) -> DitResult<()> {
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)
-            .map_err(|_| FsError::DirCreateError(parent.display().to_string()))?;
+            .map_err(|_| FsError::DirCreateError(path_to_string(path)))?;
     }
 
     File::create(path)
@@ -48,18 +43,11 @@ pub fn create_file_all<P: AsRef<Path>>(path: P) -> DitResult<()> {
     Ok(())
 }
 
-/// Renames a file and maps the error to [`FsError`]
-pub fn rename_file<P1, P2>(from: P1, to: P2) -> DitResult<()>
-where
-    P1: AsRef<Path>,
-    P2: AsRef<Path>,
-{
-    let from = from.as_ref();
-    let to = to.as_ref();
 
+/// Renames a file using [`fs::rename`] and maps the error to [`FsError`]
+pub fn rename_file(from: &Path, to: &Path) -> DitResult<()> {
     fs::rename(from, to)
-        .map_err(|_| FsError::FileRenameError(
-            from.display().to_string(), to.display().to_string()))?;
+        .map_err(|_| FsError::FileRenameError(path_to_string(from), path_to_string(to)))?;
 
     Ok(())
 }

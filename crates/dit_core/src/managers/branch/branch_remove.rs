@@ -1,7 +1,7 @@
 ﻿use crate::errors::BranchError;
 use crate::managers::branch::BranchMgr;
 use crate::errors::DitResult;
-use crate::helpers::remove_file;
+use crate::helpers::remove_file_if_exists;
 
 impl BranchMgr {
     pub fn remove_branch<S: AsRef<str>>(&mut self, name: S) -> DitResult<()> {
@@ -20,7 +20,7 @@ impl BranchMgr {
             return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
         }
 
-        remove_file(path)?;
+        remove_file_if_exists(&path)?;
 
         Ok(())
     }

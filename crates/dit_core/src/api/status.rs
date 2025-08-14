@@ -74,7 +74,7 @@ impl Dit {
     ) -> DitResult<()> {
         let rel_path = rel_path.into();
         let (untracked, tracked) = stage_mgr.get_changes(
-            rel_path.clone(), tree_mgr, commit_mgr, branch_mgr
+            &rel_path, tree_mgr, commit_mgr, branch_mgr
         )?;
 
         if !matches!(untracked, ChangeType::Unchanged) {

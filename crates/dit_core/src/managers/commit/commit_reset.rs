@@ -2,7 +2,7 @@ use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::branch::BranchMgr;
-use crate::helpers::remove_file;
+use crate::helpers::remove_file_if_exists;
 use crate::errors::DitResult;
 use crate::managers::ignore::IgnoreMgr;
 
@@ -47,7 +47,7 @@ impl CommitMgr {
 
         // Clear the project directory to recover the target commit tree
         ignore_mgr.walk_dir_files(self.repo.repo_path(), |p| {
-            remove_file(p)
+            remove_file_if_exists(&p)
         })?;
 
         tree_mgr.recover_tree(commit.tree, blob_mgr)?;

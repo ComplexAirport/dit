@@ -5,4 +5,7 @@ use thiserror::Error;
 pub enum OtherError {
     #[error("Current system time is earlier then the unix epoch time.")]
     TimeWentBackwardsError,
+
+    #[error("Failed to flush the buffer.")]
+    BufferFlushError,
 }

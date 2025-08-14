@@ -17,7 +17,6 @@ impl TreeMgr {
     /// Writes the tree to the trees directory
     pub(super) fn write_tree(&self, tree: &Tree) -> DitResult<()> {
         let path = self.repo.trees().join(tree.hash.clone());
-        tree.write_to(path)?;
-        Ok(())
+        tree.write_to(path)
     }
 }

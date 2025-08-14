@@ -1,5 +1,5 @@
 ﻿use crate::managers::ignore::manager::{IgnoreMgr, DEFAULT_IGNORE_LIST};
-use crate::helpers::{path_to_string, remove_dir, remove_file};
+use crate::helpers::{path_to_string, remove_dir, remove_file_if_exists};
 use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
 use jwalk::WalkDir;
@@ -69,9 +69,9 @@ impl IgnoreMgr {
 
         for (path, is_dir) in to_delete {
             if is_dir {
-                remove_dir(path)?;
+                remove_dir(&path)?;
             } else {
-                remove_file(path)?;
+                remove_file_if_exists(&path)?;
             }
         }
 

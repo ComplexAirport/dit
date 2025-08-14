@@ -4,8 +4,8 @@ use crate::managers::stage::StageMgr;
 use crate::managers::tree::TreeMgr;
 use crate::errors::{DitResult, OtherError};
 use crate::models::{Commit, Stage};
-use sha2::{Digest, Sha256};
 use std::time::SystemTime;
+use crate::helpers::DitHasher;
 use crate::managers::blob::BlobMgr;
 
 /// Public
@@ -65,13 +65,15 @@ impl CommitMgr {
             .map_err(|_| OtherError::TimeWentBackwardsError)?
             .as_secs();
 
-        let mut hasher = Sha256::new();
-        hasher.update(&author);
-        hasher.update(&message);
-        hasher.update(timestamp.to_le_bytes());
-        hasher.update(&tree_hash);
-        hasher.update(parent_commit_hash.clone().unwrap_or(String::from('\0')));
-        let commit_hash = format!("{:x}", hasher.finalize());
+        let mut hasher = DitHasher::new();
+        hasher.update(&author.as_bytes());
+        hasher.update(&message.as_bytes());
+        hasher.update(&timestamp.to_le_bytes());
+        hasher.update(&tree_hash.as_bytes());
+        hasher.update(&parent_commit_hash.clone()
+                          .map(|s| s.into_bytes())
+                          .unwrap_or_else(|| vec![0]), );
+        let commit_hash = hasher.finalize_string();
 
         let parents = if let Some(parent) = parent_commit_hash {
             vec![parent]
