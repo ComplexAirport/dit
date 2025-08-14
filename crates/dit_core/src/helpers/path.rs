@@ -5,11 +5,8 @@ use globmatch::Builder;
 
 
 /// Expands a glob to a directory list
-pub fn expand_glob<P, S>(base_path: P, glob_pattern: S)
-    -> DitResult<Vec<PathBuf>>
-where
-    P: AsRef<Path>,
-    S: AsRef<str>,
+pub fn expand_glob<S>(base_path: &Path, glob_pattern: S) -> DitResult<Vec<PathBuf>>
+where S: AsRef<str>,
 {
     let builder = Builder::new(glob_pattern.as_ref())
         .build(base_path)
@@ -19,6 +16,7 @@ where
         .into_iter()
         .flatten()
         .collect();
+
     Ok(paths)
 }
 
@@ -31,11 +29,8 @@ pub fn get_cwd() -> DitResult<PathBuf> {
 
 
 /// Converts a path to a string
-pub fn path_to_string<P: AsRef<Path>>(path: P) -> String {
-    path
-        .as_ref()
-        .to_string_lossy()
-        .to_string()
+pub fn path_to_string(path: &Path) -> String {
+    path.to_string_lossy().to_string()
 }
 
 

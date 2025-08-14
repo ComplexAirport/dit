@@ -11,17 +11,14 @@
 macro_rules! impl_read_write_model {
     ($model:ident, $err_enum:ident) => {
         impl $model {
-            pub fn write_to<P: AsRef<Path>>(&self, path: P) -> DitResult<()> {
+            pub fn write_to(&self, path: &Path) -> DitResult<()> {
                 let serialized = serde_json::to_string(self)
                     .map_err(|_| $err_enum::SerializationError(self.hash.clone()))?;
 
-                write_to_file(path, serialized)?;
-
-                Ok(())
+                write_to_file(path, serialized)
             }
 
-            pub fn read_from<P: AsRef<Path>>(path: P) -> DitResult<$model> {
-                let path = path.as_ref();
+            pub fn read_from(path: &Path) -> DitResult<$model> {
                 let serialized = read_to_string(&path)?;
 
                 let model: $model = serde_json::from_str(&serialized)

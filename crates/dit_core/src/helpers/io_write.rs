@@ -1,9 +1,13 @@
 ﻿//! Superfast functions for IO writing operations
 
-use crate::helpers::{path_to_string, rename_file, BUFFER_SIZE};
-use crate::helpers::io_read::read_from_buf_reader;
-use crate::helpers::temp_file::create_temp_file;
-use crate::helpers::hashing::HashingWriter;
+use crate::helpers::{
+    fs_manage::rename_file,
+    io_read::read_from_buf_reader,
+    temp_file::create_temp_file,
+    hashing::HashingWriter,
+    path::path_to_string,
+    constants::BUFFER_SIZE,
+};
 use crate::errors::{DitResult, FsError, OtherError};
 use std::fs;
 use std::fs::File;
@@ -11,24 +15,19 @@ use std::io::{self, BufReader, BufWriter, Write};
 use std::path::Path;
 
 /// Writes to a file using [`fs::write`] and maps the error to [`FsError`]
-pub fn write_to_file<P, S>(path: P, content: S) -> DitResult<()>
-where
-    P: AsRef<Path>,
-    S: AsRef<str>
+pub fn write_to_file<S>(path: &Path, content: S) -> DitResult<()>
+where S: AsRef<str>
 {
-    fs::write(&path, content.as_ref())
+    fs::write(path, content.as_ref())
         .map_err(|_| FsError::FileWriteError(path_to_string(path)).into())
 }
 
 /// Writes to a [`BufWriter`] from a buffer and maps the error to [`FsError`]
-pub fn write_to_buf_writer<P: AsRef<Path>>(
+pub fn write_to_buf_writer(
     writer: &mut BufWriter<File>,
     buffer: &[u8],
-    file_path: P
-) -> DitResult<()>
+    file_path: &Path) -> DitResult<()>
 {
-    let file_path = file_path.as_ref();
-
     writer.write_all(buffer)
         .map_err(|_| FsError::FileWriteError(path_to_string(file_path)).into())
 }
@@ -36,9 +35,8 @@ pub fn write_to_buf_writer<P: AsRef<Path>>(
 
 
 /// Copies the content of a given file to the given destination
-pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()>
-{
-    fs::copy(&src, &dest)
+pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()> {
+    fs::copy(src, dest)
         .map_err(|_| FsError::FileCopyError(
             path_to_string(src),
             path_to_string(dest)

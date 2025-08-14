@@ -12,13 +12,14 @@ impl BlobMgr {
     /// Returns the file hash
     pub fn create_temp_blob(&self, source: &Path) -> DitResult<String> {
         let dest = self.repo.stage();
-        let hash = copy_with_hash_as_name(source, dest)?;
-        Ok(hash)
+
+        copy_with_hash_as_name(source, dest)
     }
 
     /// Moves the file with an already known hash to the temporary blobs
     pub fn create_temp_blob_with_hash(&self, source_file: &Path, hash: String) -> DitResult<()> {
         let dest = self.repo.stage().join(&hash);
+
         copy_file(source_file, &dest)
     }
 
@@ -34,6 +35,7 @@ impl BlobMgr {
     /// Removes a staged (temporary blob)
     pub fn remove_temp_blob(&self, hash: String) -> DitResult<()> {
         let path = self.repo.stage().join(hash);
+
         remove_file_if_exists(&path)
     }
 

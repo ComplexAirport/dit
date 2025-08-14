@@ -7,16 +7,15 @@ use crate::models::Tree;
 impl TreeMgr {
     /// Reads and returns a tree from the tree's hash
     pub fn get_tree(&self, tree_hash: String) -> DitResult<Tree> {
-        let path = self.repo.trees().join(tree_hash.clone());
+        let path = self.repo.trees().join(tree_hash);
 
-        let tree: Tree = Tree::read_from(path)?;
-
-        Ok(tree)
+        Tree::read_from(&path)
     }
     
     /// Writes the tree to the trees directory
     pub(super) fn write_tree(&self, tree: &Tree) -> DitResult<()> {
-        let path = self.repo.trees().join(tree.hash.clone());
-        tree.write_to(path)
+        let path = self.repo.trees().join(&tree.hash);
+        
+        tree.write_to(&path)
     }
 }

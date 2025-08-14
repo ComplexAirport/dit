@@ -26,7 +26,7 @@ impl Repo {
         let repo_path = resolve_absolute_path(project_path.as_ref())?;
 
         if !repo_path.is_dir() {
-            return Err(ProjectError::ProjectPathNotADirectory(path_to_string(repo_path)).into());
+            return Err(ProjectError::ProjectPathNotADirectory(path_to_string(&repo_path)).into());
         }
 
         /*************************
@@ -164,8 +164,7 @@ impl Repo {
     /// 1. If the given path is relative, it will be considered relative to the current working
     ///    directory
     /// 2. If the given file is absolute, nothing will change
-    pub fn abs_path_from_cwd<P: AsRef<Path>>(&self, path: P, missing_ok: bool) -> DitResult<PathBuf> {
-        let path = path.as_ref();
+    pub fn abs_path_from_cwd(&self, path: &Path, missing_ok: bool) -> DitResult<PathBuf> {
         if path.is_absolute() {
             Ok(path.to_path_buf())
         } else if !missing_ok {
@@ -179,8 +178,7 @@ impl Repo {
     ///
     /// NOTE: If the given path is relative, it will be considered relative to the
     /// current working directory. Returns an error if the project does not contain such a path
-    pub fn rel_path<P: AsRef<Path>>(&self, path: P) -> DitResult<PathBuf> {
-        let path = path.as_ref();
+    pub fn rel_path(&self, path: &Path) -> DitResult<PathBuf> {
         let abs_path = self.abs_path_from_cwd(path, false)?;
 
         match abs_path.strip_prefix(&self.repo_path) {

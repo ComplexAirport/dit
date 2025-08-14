@@ -37,7 +37,7 @@ pub fn create_temp_file<P: AsRef<Path>>(dest_dir: P)
             }
 
             Err(_) =>
-                return Err(FsError::FileCreateError(path_to_string(path)).into())
+                return Err(FsError::FileCreateError(path_to_string(&path)).into())
         }
     }
 }
