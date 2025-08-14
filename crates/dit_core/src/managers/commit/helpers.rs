@@ -9,12 +9,12 @@ impl CommitMgr {
     /// Writes the given commit to the commits directory
     pub(super) fn write_commit(&self, commit: &Commit) -> DitResult<()> {
         let path = self.repo.commits().join(&commit.hash);
-        commit.write_to(&path)?;
-        Ok(())
+
+        commit.write_to(&path)
     }
 
     /// Reads and returns a commit given the commit's hash
-    pub(super) fn load_commit<S: Into<String>>(&self, hash: S) -> DitResult<Commit> {
+    pub fn get_commit<S: Into<String>>(&self, hash: S) -> DitResult<Commit> {
         let hash = hash.into();
         let path = self.repo.commits().join(&hash);
 
@@ -29,12 +29,6 @@ impl CommitMgr {
 
 /// Getters
 impl CommitMgr {
-    /// Returns a commit by hash
-    pub fn get_commit<S: Into<String>>(&self, hash: S) -> DitResult<Commit> {
-        self.load_commit(hash)
-    }
-
-
     /// Returns the tree of a commit by commit hash
     pub fn get_commit_tree<S: Into<String>>(
         &self,
@@ -42,8 +36,8 @@ impl CommitMgr {
         tree_mgr: &TreeMgr
     ) -> DitResult<Tree> {
         let commit = self.get_commit(hash)?;
-        let tree = tree_mgr.get_tree(commit.tree)?;
-        Ok(tree)
+
+        tree_mgr.get_tree(commit.tree)
     }
 
     /// Returns the parent commit hash(es) of a given commit

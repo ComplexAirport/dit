@@ -66,10 +66,10 @@ impl CommitMgr {
             .as_secs();
 
         let mut hasher = DitHasher::new();
-        hasher.update(&author.as_bytes());
-        hasher.update(&message.as_bytes());
+        hasher.update(author.as_bytes());
+        hasher.update(message.as_bytes());
         hasher.update(&timestamp.to_le_bytes());
-        hasher.update(&tree_hash.as_bytes());
+        hasher.update(tree_hash.as_bytes());
         hasher.update(&parent_commit_hash.clone()
                           .map(|s| s.into_bytes())
                           .unwrap_or_else(|| vec![0]), );

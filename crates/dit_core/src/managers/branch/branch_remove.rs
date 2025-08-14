@@ -20,8 +20,6 @@ impl BranchMgr {
             return Err(BranchError::BranchDoesNotExist(name.to_string()).into());
         }
 
-        remove_file_if_exists(&path)?;
-
-        Ok(())
+        remove_file_if_exists(&path)
     }
 }

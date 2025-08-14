@@ -37,9 +37,7 @@ impl StageMgr {
         let serialized = serde_json::to_string_pretty(&self.stage)
             .map_err(|_| StagingError::SerializationError)?;
 
-        write_to_file(path, serialized)?;
-
-        Ok(())
+        write_to_file(path, serialized)
     }
 }
 
@@ -52,7 +50,6 @@ impl StageMgr {
     pub fn get_stage(&self) -> &Stage {
         &self.stage
     }
-
 
     /// Returns the untracked and tracked changes of a file \
     /// The first element in the result tuple represents the untracked changes,

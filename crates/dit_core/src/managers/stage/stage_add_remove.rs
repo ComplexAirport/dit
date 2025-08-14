@@ -21,16 +21,16 @@ impl StageMgr {
         commit_mgr: &CommitMgr,
         branch_mgr: &BranchMgr
     ) -> DitResult<()> {
-        let rel_path = self.repo.rel_path(&file_path)?;
+        let rel_path = self.repo.rel_path(file_path)?;
         let (change, _) = self.get_changes(&rel_path, tree_mgr, commit_mgr, branch_mgr)?;
 
         match &change {
             ChangeType::New(NewFile { hash, .. }) => {
-                blob_mgr.create_temp_blob_with_hash(&file_path, hash.clone())?;
+                blob_mgr.create_temp_blob_with_hash(file_path, hash.clone())?;
 
             }
             ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
-                blob_mgr.create_temp_blob_with_hash(&file_path, new_hash.clone())?;
+                blob_mgr.create_temp_blob_with_hash(file_path, new_hash.clone())?;
             }
 
             _ => {}
@@ -45,8 +45,7 @@ impl StageMgr {
     }
 
     /// Unstages a file based on its path
-    pub fn unstage_file<P: AsRef<Path>>(&mut self, file_path: P) -> DitResult<()> {
-        let file_path = file_path.as_ref();
+    pub fn unstage_file(&mut self, file_path: &Path) -> DitResult<()> {
         let rel_path = self.repo.abs_path_from_cwd(file_path, false)?;
 
         let staged_path = self.stage.files.remove(&rel_path);
@@ -63,14 +62,11 @@ impl StageMgr {
                     remove_file_if_exists(&temp_blob_path)?;
                 }
 
-                ChangeType::Deleted => {}
-                ChangeType::Unchanged => {}
+                _ => {}
             }
         }
 
-        self.update_stage_file()?;
-
-        Ok(())
+        self.update_stage_file()
     }
 
     /// Clears the [`STAGE_FILE`] and inner cache
@@ -78,23 +74,23 @@ impl StageMgr {
     /// [`STAGE_FILE`]: crate::project_structure::STAGE_FILE
     pub fn clear_stage_file(&mut self) -> DitResult<()> {
         self.stage.files.clear();
-        self.update_stage_file()?;
-        Ok(())
+        self.update_stage_file()
     }
 
     /// Clears the [`STAGE_FILE`] and inner cache and removes the temporary blobs
     pub fn clear_stage_all(&mut self, blob_mgr: &BlobMgr) -> DitResult<()> {
-        for change in self.stage.files.values() {
-            match change {
-                ChangeType::Modified(ModifiedFile { new_hash, .. }) =>
-                    blob_mgr.remove_temp_blob(new_hash.clone())?,
+        self.stage.files.values()
+            .try_for_each(|change| {
+                match change {
+                    ChangeType::Modified(ModifiedFile { new_hash, .. }) =>
+                        blob_mgr.remove_temp_blob(new_hash.clone()),
 
-                ChangeType::New(NewFile { hash, .. }) =>
-                    blob_mgr.remove_temp_blob(hash.clone())?,
+                    ChangeType::New(NewFile { hash, .. }) =>
+                        blob_mgr.remove_temp_blob(hash.clone()),
 
-                _ => {}
-            }
-        }
+                    _ => Ok(())
+                }
+            })?;
 
         self.clear_stage_file()
     }

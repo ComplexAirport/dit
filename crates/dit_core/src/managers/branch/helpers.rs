@@ -1,10 +1,11 @@
 use crate::errors::DitResult;
 use crate::helpers::{read_to_string, write_to_file};
 use crate::managers::branch::BranchMgr;
-use std::path::PathBuf;
 use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
 use crate::models::Tree;
+use std::path::PathBuf;
+
 
 /// Load/store from/to the [`HEAD_FILE`]
 ///
@@ -65,12 +66,22 @@ impl BranchMgr {
 
 /// Branch head operations
 impl BranchMgr {
+    /// Sets the current head branch and head commit to new values
+    pub(super) fn set_head<S1, S2>(&mut self, branch: S1, commit: S2)
+        -> DitResult<()>
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
+        self.set_current_branch(branch.as_ref())?;
+        self.set_head_commit(commit.as_ref())?;
+        self.store()
+    }
+    
     /// Sets the current (head) branch to a new value
-    pub fn set_current_branch<S: AsRef<str>>(&mut self, branch: S) -> DitResult<()> {
-        let branch = branch.as_ref();
-        self.curr_branch = Some(branch.to_string());
-        self.store()?;
-        Ok(())
+    pub fn set_current_branch<S: Into<String>>(&mut self, branch: S) -> DitResult<()> {
+        self.curr_branch = Some(branch.into());
+        self.store()
     }
 
     /// Returns the name of the current (head) branch
@@ -88,7 +99,7 @@ impl BranchMgr {
         let branch = branch.as_ref();
         let commit = commit.as_ref();
 
-        let branch_file = self.repo.branches().join(&branch);
+        let branch_file = self.repo.branches().join(branch);
 
         if branch_file.is_file() {
             write_to_file(&branch_file, commit)?;
@@ -117,11 +128,9 @@ impl BranchMgr {
 /// Commit head operations
 impl BranchMgr {
     /// Sets the current (head) commit to a new value
-    pub fn set_head_commit<S: AsRef<str>>(&mut self, commit: S) -> DitResult<()> {
-        let commit = commit.as_ref();
-        self.curr_commit = Some(commit.to_string());
-        self.store()?;
-        Ok(())
+    pub fn set_head_commit<S: Into<String>>(&mut self, commit: S) -> DitResult<()> {
+        self.curr_commit = Some(commit.into());
+        self.store()
     }
 
     /// Returns the hash of the current commit
@@ -150,6 +159,6 @@ impl BranchMgr {
         let name = name.as_ref();
         let path = self.repo.branches().join(name);
 
-        (path.exists(), path)
+        (path.is_file(), path)
     }
 }

@@ -2,14 +2,11 @@
 use crate::helpers::{path_to_string, remove_dir, remove_file_if_exists};
 use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
+use std::collections::HashSet;
 use jwalk::WalkDir;
 
 
 impl IgnoreMgr {
-    pub fn is_ignored<P: AsRef<Path>>(&self, path: P) -> bool {
-        _is_ignored(path, &self.ignored_list)
-    }
-
     /// Walks a specified directory (all the files except the ignored ones)
     /// and applies the given predicate to each file
     pub fn walk_dir_files<P, F>(&self, root: P, mut predicate: F) -> DitResult<()>
@@ -24,7 +21,7 @@ impl IgnoreMgr {
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| {
                     if let Ok(dir_entry) = child {
-                        !_is_ignored(dir_entry.path(), &ignored_list)
+                        !_is_ignored(&dir_entry.path(), &ignored_list)
                     } else {
                         true
                     }
@@ -49,7 +46,7 @@ impl IgnoreMgr {
                 children.retain(|child| match child {
                     Ok(entry) => {
                         if entry.file_type.is_dir() {
-                            !_is_ignored(entry.path(), &ignored_list)
+                            !_is_ignored(&entry.path(), &ignored_list)
                         } else {
                             true
                         }
@@ -80,17 +77,14 @@ impl IgnoreMgr {
 }
 
 
-fn _is_ignored<P1: AsRef<Path>>(rel_path: P1, ignore_list: &[PathBuf]) -> bool
-{
-    let path = rel_path.as_ref();
-
-    let in_ignore = path
+fn _is_ignored(rel_path: &Path, ignore_list: &HashSet<PathBuf>) -> bool {
+    let in_ignore = rel_path
         .ancestors()
         .map(|p| p.to_path_buf())
         .any(|ancestor| ignore_list.contains(&ancestor));
 
     let in_default_ignore = DEFAULT_IGNORE_LIST
-        .contains(&path_to_string(path).as_str());
+        .contains(&path_to_string(rel_path).as_str());
 
     in_ignore || in_default_ignore
 }

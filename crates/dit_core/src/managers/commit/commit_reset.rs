@@ -14,8 +14,8 @@ impl CommitMgr {
         branch_mgr: &mut BranchMgr,
     ) -> DitResult<()> {
         let commit = self.get_commit(commit.as_ref())?;
-        branch_mgr.set_head_commit(commit.hash)?;
-        Ok(())
+
+        branch_mgr.set_head_commit(commit.hash)
     }
 
     /// Performs a mixed reset to a specific commit. Mixed reset means that the files
@@ -35,6 +35,8 @@ impl CommitMgr {
         Ok(())
     }
 
+    /// Performs a mixed reset to a specific commit. Hard reset means that the files
+    /// not included in that commit tree will be deleted.
     pub fn hard_reset<S: AsRef<str>>(
         &mut self,
         commit: S,

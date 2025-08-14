@@ -7,6 +7,7 @@ use crate::managers::ignore::IgnoreMgr;
 use crate::errors::{BranchError, DitResult};
 use crate::helpers::{create_file_all, read_to_string, write_to_file, copy_file};
 use std::collections::BTreeMap;
+use rayon::prelude::*;
 
 /// Public
 impl BranchMgr {
@@ -37,9 +38,7 @@ impl BranchMgr {
             }
         }
 
-        self.set_current_branch(name)?;
-
-        Ok(())
+        self.set_current_branch(name)
     }
 
 
@@ -48,11 +47,11 @@ impl BranchMgr {
         &mut self,
         name: S,
         is_hard: bool,
-        blob_mgr: &mut BlobMgr,
-        tree_mgr: &mut TreeMgr,
-        commit_mgr: &mut CommitMgr,
+        blob_mgr: &BlobMgr,
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
         stage_mgr: &mut StageMgr,
-        ignore_mgr: &mut IgnoreMgr,
+        ignore_mgr: &IgnoreMgr,
     ) -> DitResult<()> {
         let name = name.as_ref();
         let (exists, path) = self.find_branch(name);
@@ -79,16 +78,16 @@ impl BranchMgr {
         // Remove the current project root
         ignore_mgr.clear_dir(self.repo.repo_path())?;
 
-        for (rel_path, blob_hash) in files {
-            create_file_all(&rel_path)?;
-            let src = blob_mgr.get_blob_path(blob_hash);
-            copy_file(&src, &rel_path)?;
-        }
+        // Create the files in the commit
+        files.into_par_iter()
+            .try_for_each(|(rel_path, blob_hash)| {
+                create_file_all(&rel_path)?;
+                let src = blob_mgr.get_blob_path(blob_hash);
+                copy_file(&src, &rel_path)
+            })?;
 
-        self.set_head_commit(target_commit_hash)?;
-
-        // todo: this definitely needs improvement
-        Ok(())
+        // Set heads to the branch
+        self.set_head(name, target_commit_hash)
     }
 }
 
