@@ -81,9 +81,8 @@ impl Dit {
             status.add_untracked(rel_path.clone(), ApiChangeType::from(untracked));
         }
 
-        match tracked {
-            Some(tracked) => status.add_tracked(rel_path, ApiChangeType::from(tracked)),
-            None => ()
+        if let Some(tracked) = tracked {
+            status.add_tracked(rel_path, ApiChangeType::from(tracked))
         }
 
         Ok(())

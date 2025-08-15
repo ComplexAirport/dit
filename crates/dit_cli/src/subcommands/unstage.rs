@@ -1,9 +1,10 @@
 use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
-use clap::Args;
-use dit_core::helpers::resolve_absolute_path;
-use std::path::PathBuf;
 use crate::success;
+use clap::Args;
+use std::path::PathBuf;
+use dit_core::errors::DitResult;
+use dit_core::helpers::resolve_absolute_path;
 
 #[derive(Args)]
 pub struct UnstageSubcommand {
@@ -14,11 +15,16 @@ pub struct UnstageSubcommand {
 impl HandleSubcommand for UnstageSubcommand {
     fn handle(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
-        for file in &self.files {
-            let abs_path = resolve_absolute_path(file)?;
-            dit.unstage_file(&abs_path)?;
-            success!("Unstaged the file `{}`", file.display());
-        }
+
+        let paths = self.files
+            .iter()
+            .map(|p| resolve_absolute_path(p))
+            .collect::<DitResult<Vec<_>>>()?;
+
+        dit.unstage_files(paths)?;
+
+        success!("Unstaged the files successfully");
+
         Ok(())
     }
 }
