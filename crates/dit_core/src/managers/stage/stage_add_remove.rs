@@ -29,14 +29,14 @@ impl StageMgr {
                 blob_mgr.create_temp_blob_with_hash(file_path, hash.clone())?;
 
             }
-            ChangeType::Modified(ModifiedFile { new_hash, .. }) => {
+            ChangeType::Modified(ModifiedFile { hash: new_hash, .. }) => {
                 blob_mgr.create_temp_blob_with_hash(file_path, new_hash.clone())?;
             }
 
             _ => {}
         }
 
-        if !matches!(change, ChangeType::Unchanged) {
+        if !matches!(change, ChangeType::Unchanged(_)) {
             self.stage.files.insert(rel_path, change);
             self.update_stage_file()?;
         }
@@ -58,7 +58,7 @@ impl StageMgr {
                 }
 
                 ChangeType::Modified(file) => {
-                    let temp_blob_path = self.repo.stage().join(file.new_hash);
+                    let temp_blob_path = self.repo.stage().join(file.hash);
                     remove_file_if_exists(&temp_blob_path)?;
                 }
 
@@ -82,7 +82,7 @@ impl StageMgr {
         self.stage.files.values()
             .try_for_each(|change| {
                 match change {
-                    ChangeType::Modified(ModifiedFile { new_hash, .. }) =>
+                    ChangeType::Modified(ModifiedFile { hash: new_hash, .. }) =>
                         blob_mgr.remove_temp_blob(new_hash.clone()),
 
                     ChangeType::New(NewFile { hash, .. }) =>

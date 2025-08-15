@@ -8,4 +8,7 @@ pub enum StagingError {
 
     #[error("Failed to deserialize the stage file")]
     DeserializationError,
+
+    #[error("File not found on the filesystem and is not tracked: '{0}'")]
+    FileNotFound(String),
 }

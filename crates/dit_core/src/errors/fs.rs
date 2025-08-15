@@ -42,6 +42,9 @@ pub enum FsError {
     #[error("Failed to copy the file '{0}' to '{1}'")]
     FileCopyError(String, String),
 
+    #[error("Failed to resolve the metadata for the file '{0}'")]
+    FileMetadataResolveError(String),
+
     #[error("Could not resolve the absolute path for '{0}'")]
     AbsPathResolveError(String),
 

@@ -24,14 +24,10 @@ impl TreeMgr {
         let mut blobs_to_commit = HashSet::new();
         for (rel_path, change) in &stage.files {
             match change {
-                ChangeType::New(NewFile { hash }) => {
+                ChangeType::New(NewFile { hash, .. })
+                | ChangeType::Modified(ModifiedFile { hash, .. }) => {
                     blobs_to_commit.insert(hash.clone());
                     files.insert(rel_path.clone(), hash.clone());
-                }
-
-                ChangeType::Modified(ModifiedFile { new_hash, ..}) => {
-                    blobs_to_commit.insert(new_hash.clone());
-                    files.insert(rel_path.clone(), new_hash.clone());
                 }
 
                 ChangeType::Deleted => {

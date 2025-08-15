@@ -2,8 +2,8 @@ use crate::managers::tree::TreeMgr;
 use crate::managers::stage::StageMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
-use crate::models::{NewFile, ChangeType, ModifiedFile, Stage};
-use crate::helpers::{hash_file, read_to_string, write_to_file};
+use crate::models::{NewFile, ChangeType, ModifiedFile, Stage, FileFingerprint, UnchangedFile};
+use crate::helpers::{hash_file, path_to_string, read_to_string, write_to_file};
 use crate::errors::{DitResult, StagingError};
 use std::path::Path;
 
@@ -60,46 +60,47 @@ impl StageMgr {
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
         branch_mgr: &BranchMgr,
-    ) -> DitResult<(ChangeType /* Untracked change */, ChangeType /* Tracked change */)>
+    ) -> DitResult<(ChangeType /* Untracked change */, Option<ChangeType> /* tracked change */)>
     {
         let abs_path = self.repo.abs_path_from_repo(rel_path, true)?;
 
-        let current_hash = if abs_path.is_file() {
-            Some(hash_file(&abs_path)?)
-        } else {
-            None
+        // Calculate the current fingerprint of the file
+        let fp = FileFingerprint::from(&abs_path)?;
+
+        // First, check if the path is tracked
+        let in_stage = self.stage.files.get(rel_path);
+
+        // In case the file is tracked, we can compare the metadata and see whether it differs
+        // if the metadata differs, we can calculate the new hash
+        let current_hash = match in_stage {
+            Some(change) => match change {
+                ChangeType::Deleted => None,
+
+                ChangeType::Unchanged(UnchangedFile { fingerprint, hash })
+                | ChangeType::Modified(ModifiedFile { fingerprint, hash, .. })
+                | ChangeType::New(NewFile { fingerprint, hash })
+                if *fingerprint == fp
+                    => Some(hash.clone()),
+
+                _ => Some(hash_file(&abs_path)?)
+            }
+
+            _other if abs_path.is_file() => Some(hash_file(&abs_path)?),
+
+            _ => None,
         };
 
+        // Access the path from the tree
         let in_tree = branch_mgr
             .get_head_tree(tree_mgr, commit_mgr)?
             .and_then(|mut t| t.files.remove(rel_path));
 
-        let in_stage = self.stage.files.get(rel_path);
-
-        let untracked_change = self.three_way_comparison(current_hash, in_tree, in_stage);
-
-        let tracked_change = match in_stage {
-            None => ChangeType::Unchanged,
-            Some(change) => change.clone()
-        };
-
-        Ok((untracked_change, tracked_change))
-    }
-}
-
-/// Private
-impl StageMgr {
-    /// Returns a possible untracked change of a file
-    fn three_way_comparison(
-        &self,
-        current: Option<String>,
-        in_tree: Option<String>,
-        in_stage: Option<&ChangeType>
-    ) -> ChangeType {
-        match current {
+        // Perform a three-way comparison of the file in the current filesystem,
+        // the tree and in the stage
+        let untracked_change = match current_hash {
             None => match in_stage {
                 None => match in_tree {
-                    None => ChangeType::Unchanged,
+                    None => return Err(StagingError::FileNotFound(path_to_string(rel_path)).into()),
                     Some(_) => ChangeType::Deleted
                 }
 
@@ -107,40 +108,49 @@ impl StageMgr {
             }
             Some(hash) => match in_stage {
                 None => match in_tree {
-                    None => ChangeType::New(NewFile { hash }),
+                    None => ChangeType::New(NewFile { hash, fingerprint: fp }),
                     Some(old_hash) =>
                         if old_hash == hash {
-                            ChangeType::Unchanged
+                            ChangeType::Unchanged(UnchangedFile { hash, fingerprint: fp })
                         } else {
-                            ChangeType::Modified(ModifiedFile { old_hash, new_hash: hash, })
+                            ChangeType::Modified(ModifiedFile { old_hash, hash, fingerprint: fp })
                         }
                 }
 
                 Some(change) => match change {
-                    ChangeType::Unchanged => ChangeType::Unchanged,
-                    ChangeType::Deleted => ChangeType::New(NewFile { hash }),
+                    ChangeType::Unchanged(u) => ChangeType::Unchanged(u.clone()),
+                    ChangeType::Deleted => ChangeType::New(NewFile { hash, fingerprint: fp }),
                     ChangeType::Modified(file) => {
-                        if file.new_hash == hash {
-                            ChangeType::Unchanged
+                        if file.hash == hash {
+                            ChangeType::Unchanged(UnchangedFile { hash, fingerprint: fp })
                         } else {
                             ChangeType::Modified(ModifiedFile {
                                 old_hash: file.old_hash.clone(),
-                                new_hash: hash,
+                                hash,
+                                fingerprint: fp,
                             })
                         }
                     }
                     ChangeType::New(file) => {
                         if file.hash == hash {
-                            ChangeType::Unchanged
+                            ChangeType::Unchanged(UnchangedFile { hash, fingerprint: fp})
                         } else {
                             ChangeType::Modified(ModifiedFile {
                                 old_hash: file.hash.clone(),
-                                new_hash: hash,
+                                hash,
+                                fingerprint: fp
                             })
                         }
                     }
                 }
             }
-        }
+        };
+
+        let tracked_change = match in_stage {
+            Some(change) if !matches!(change, ChangeType::Unchanged(_)) => Some(change.clone()),
+            _ => None
+        };
+
+        Ok((untracked_change, tracked_change))
     }
 }

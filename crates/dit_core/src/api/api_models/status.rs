@@ -101,7 +101,7 @@ impl ChangeType {
             CoreChangeType::New(_) => ChangeType::New,
             CoreChangeType::Modified(_) => ChangeType::Modified,
             CoreChangeType::Deleted => ChangeType::Deleted,
-            CoreChangeType::Unchanged => unreachable!()
+            CoreChangeType::Unchanged(_) => unreachable!()
         }
     }
 }

@@ -77,12 +77,13 @@ impl Dit {
             &rel_path, tree_mgr, commit_mgr, branch_mgr
         )?;
 
-        if !matches!(untracked, ChangeType::Unchanged) {
+        if !matches!(untracked, ChangeType::Unchanged(_)) {
             status.add_untracked(rel_path.clone(), ApiChangeType::from(untracked));
         }
 
-        if !matches!(tracked, ChangeType::Unchanged) {
-            status.add_tracked(rel_path, ApiChangeType::from(tracked));
+        match tracked {
+            Some(tracked) => status.add_tracked(rel_path, ApiChangeType::from(tracked)),
+            None => ()
         }
 
         Ok(())
