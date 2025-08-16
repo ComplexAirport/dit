@@ -2,7 +2,6 @@
 
 use crate::helpers::{
     fs_manage::rename_file,
-    io_read::read_from_buf_reader,
     temp_file::create_temp_file,
     hashing::HashingWriter,
     path::path_to_string,

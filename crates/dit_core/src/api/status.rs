@@ -1,5 +1,4 @@
-﻿use std::time::Instant;
-use crate::Dit;
+﻿use crate::Dit;
 use crate::api_models::status::{ChangeType, Status};
 use crate::errors::DitResult;
 
@@ -7,11 +6,7 @@ impl Dit {
     /// Returns the current dit status (tracked/untracked files, etc.)
     pub fn get_status(&self) -> DitResult<Status> {
         let tree_mgr = self.tree_mgr().borrow();
-
-        let a = Instant::now();
         let ignore_mgr = self.ignore_mgr()?.borrow();
-        println!("ignore {:?}", a.elapsed());
-
         let index_mgr = self.index_mgr()?.borrow();
         let commit_mgr = self.commit_mgr().borrow();
         let branch_mgr = self.branch_mgr()?.borrow();

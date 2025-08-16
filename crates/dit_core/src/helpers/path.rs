@@ -1,23 +1,16 @@
 ﻿use crate::errors::{DitResult, FsError};
-use std::fs;
+use crate::errors::OtherError::GlobBuildError;
+use ignore::gitignore::{GitignoreBuilder, Gitignore};
 use std::path::{Path, PathBuf};
-use globmatch::Builder;
+use std::fs;
 
-
-/// Expands a glob to a directory list
-pub fn expand_glob<S>(base_path: &Path, glob_pattern: S) -> DitResult<Vec<PathBuf>>
-where S: AsRef<str>,
-{
-    let builder = Builder::new(glob_pattern.as_ref())
-        .build(base_path)
-        .map_err(FsError::Other)?;
-
-    let paths: Vec<_> = builder
-        .into_iter()
-        .flatten()
-        .collect();
-
-    Ok(paths)
+/// Builds a [`Gitignore`] given a file path
+pub fn ignore_from_file(root: &Path, ignore_file: &Path) -> DitResult<Gitignore> {
+    let mut builder = GitignoreBuilder::new(root);
+    builder.add(ignore_file);
+    builder
+        .build()
+        .map_err(|_| GlobBuildError(path_to_string(ignore_file)).into())
 }
 
 

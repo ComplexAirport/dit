@@ -51,9 +51,6 @@ pub enum FsError {
     #[error("Failed to resolve the current working directory")]
     GetCwdError,
 
-    #[error("Failed to expand the glob pattern '{0}'")]
-    GlobPatternError(String),
-
     #[error("{0}")]
     Other(String),
 }

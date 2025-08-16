@@ -2,7 +2,7 @@
 use crate::helpers::{path_to_string, remove_dir, remove_file_if_exists};
 use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
-use std::collections::HashSet;
+use ignore::gitignore::Gitignore;
 use jwalk::WalkDir;
 
 
@@ -15,13 +15,13 @@ impl IgnoreMgr {
         F: FnMut(PathBuf) -> DitResult<()>
     {
         let root = root.as_ref();
-        let ignored_list = self.ignored_list.clone();
+        let ignore = self.ignore.clone();
 
         WalkDir::new(root)
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| {
                     if let Ok(dir_entry) = child {
-                        !_is_ignored(&dir_entry.path(), &ignored_list)
+                        !Self::is_ignored(&dir_entry.path(), &ignore, dir_entry.file_type().is_dir())
                     } else {
                         true
                     }
@@ -40,18 +40,17 @@ impl IgnoreMgr {
 
     /// Clears a given directory (except the ignored files)
     pub fn clear_dir<P: AsRef<Path>>(&self, root: P) -> DitResult<()> {
-        let ignored_list = self.ignored_list.clone();
+        let ignore = self.ignore.clone();
         let mut to_delete: Vec<(PathBuf, bool /* is_dir */)> = WalkDir::new(root)
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| match child {
                     Ok(entry) => {
                         if entry.file_type.is_dir() {
-                            !_is_ignored(&entry.path(), &ignored_list)
+                            Self::is_ignored(&entry.path(), &ignore, true)
                         } else {
                             true
                         }
                     }
-
                     Err(_) => true
                 })
             })
@@ -74,17 +73,12 @@ impl IgnoreMgr {
 
         Ok(())
     }
+
+
+    /// Checks if a path is ignored given the [`Gitignore`]
+    pub fn is_ignored(rel_path: &Path, ignore: &Gitignore, is_dir: bool) -> bool {
+        ignore.matched_path_or_any_parents(rel_path, is_dir).is_ignore()
+        || DEFAULT_IGNORE_LIST.contains(&path_to_string(rel_path).as_str())
+    }
 }
 
-
-fn _is_ignored(rel_path: &Path, ignore_list: &HashSet<PathBuf>) -> bool {
-    let in_ignore = rel_path
-        .ancestors()
-        .map(|p| p.to_path_buf())
-        .any(|ancestor| ignore_list.contains(&ancestor));
-
-    let in_default_ignore = DEFAULT_IGNORE_LIST
-        .contains(&path_to_string(rel_path).as_str());
-
-    in_ignore || in_default_ignore
-}
