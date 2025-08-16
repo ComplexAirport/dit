@@ -1,4 +1,4 @@
-﻿use crate::helpers::{get_buf_reader, read_from_buf_reader, HASHING_BUFFER_SIZE};
+﻿use crate::helpers::{get_buf_reader, get_buf_reader_with_cap, read_from_buf_reader, HASHING_BUFFER_SIZE};
 use crate::errors::DitResult;
 use std::io::Write;
 use std::path::Path;
@@ -64,7 +64,7 @@ impl DitHasher {
 
 
 pub fn hash_file(path: &Path) -> DitResult<String> {
-    let mut reader = get_buf_reader(path)?;
+    let mut reader = get_buf_reader_with_cap(HASHING_BUFFER_SIZE, path)?;
     let mut hasher = DitHasher::new();
 
     let mut buf = vec![0; HASHING_BUFFER_SIZE];

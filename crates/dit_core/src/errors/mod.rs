@@ -43,6 +43,9 @@ pub enum DitCoreError {
     #[error("filesystem error: {0}")]
     FsError(#[from] FsError),
 
+    #[error("io error: {0}")]
+    IOError(#[from] std::io::Error),
+
     #[error("error: {0}")]
     OtherError(#[from] OtherError),
 }

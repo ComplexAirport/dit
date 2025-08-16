@@ -7,7 +7,7 @@ use crate::helpers::{
     path::path_to_string,
     constants::HASHING_BUFFER_SIZE,
 };
-use crate::errors::{DitResult, FsError, OtherError};
+use crate::errors::{DitResult, FsError};
 use std::fs;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
@@ -32,7 +32,6 @@ pub fn write_to_buf_writer(
 }
 
 
-
 /// Copies the content of a given file to the given destination
 pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()> {
     fs::copy(src, dest)
@@ -45,24 +44,18 @@ pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()> {
 
 /// Reads data from [`BufReader`] and writes to a [`BufWriter`] mapping the error to
 /// [`FsError`] while also calculating the content hash. Returns the hash.
-pub fn copy_file_hashed(src: &Path, dest_path: &Path, dest_file: File) -> DitResult<String>
+pub fn copy_file_hashed(src: &Path, dest_file: File) -> DitResult<String>
 {
     let src_file = File::open(src)
         .map_err(|_| FsError::FileOpenError(path_to_string(src)))?;
 
     let mut reader = BufReader::with_capacity(HASHING_BUFFER_SIZE, src_file);
-
     let writer = BufWriter::with_capacity(HASHING_BUFFER_SIZE, dest_file);
     let mut hasher = HashingWriter::new(writer);
 
-    io::copy(&mut reader, &mut hasher)
-        .map_err(|_| FsError::FileCopyError(
-            path_to_string(src),
-            path_to_string(dest_path)
-        ))?;
+    io::copy(&mut reader, &mut hasher)?;
 
-    hasher.flush()
-        .map_err(|_| OtherError::BufferFlushError)?;
+    hasher.flush()?;
 
     Ok(hasher.finalize_string())
 }
@@ -73,14 +66,13 @@ pub fn copy_file_hashed(src: &Path, dest_path: &Path, dest_file: File) -> DitRes
 pub fn copy_with_hash_as_name(src: &Path, dest_path: &Path) -> DitResult<String>
 {
     let (temp_file, temp_file_path) = create_temp_file(dest_path)?;
-    let hash = copy_file_hashed(src, &temp_file_path, temp_file)?;
+    let hash = copy_file_hashed(src, temp_file)?;
     let dest = dest_path.join(&hash);
 
     rename_file(&temp_file_path, &dest)?;
 
     Ok(hash)
 }
-
 
 
 /// Creates and returns a [`BufWriter`] given a target path and
@@ -90,5 +82,16 @@ pub fn copy_with_hash_as_name(src: &Path, dest_path: &Path) -> DitResult<String>
 pub fn get_buf_writer(path: &Path) -> DitResult<BufWriter<File>> {
     File::create(path)
         .map(BufWriter::new)
+        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
+}
+
+
+/// Creates and returns a [`BufWriter`] given a target path and
+/// buffer capacity maps the error to [`FsError`].
+///
+/// Note: creates the file if it doesn't exist and overrides it if it does
+pub fn get_buf_writer_with_cap(cap: usize, path: &Path) -> DitResult<BufWriter<File>> {
+    File::create(path)
+        .map(|f| BufWriter::with_capacity(cap, f))
         .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
 }

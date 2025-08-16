@@ -21,7 +21,7 @@ impl IgnoreMgr {
             .process_read_dir(move |_depth, _path, _state, children| {
                 children.retain(|child| {
                     if let Ok(dir_entry) = child {
-                        !Self::is_ignored(&dir_entry.path(), &ignore, dir_entry.file_type().is_dir())
+                        !Self::is_ignored_inner(&dir_entry.path(), &ignore, dir_entry.file_type().is_dir())
                     } else {
                         true
                     }
@@ -46,7 +46,7 @@ impl IgnoreMgr {
                 children.retain(|child| match child {
                     Ok(entry) => {
                         if entry.file_type.is_dir() {
-                            Self::is_ignored(&entry.path(), &ignore, true)
+                            Self::is_ignored_inner(&entry.path(), &ignore, true)
                         } else {
                             true
                         }
@@ -74,9 +74,12 @@ impl IgnoreMgr {
         Ok(())
     }
 
+    pub fn is_ignored(&self, path: &Path) -> bool {
+        Self::is_ignored_inner(path, &self.ignore, path.is_dir())
+    }
 
     /// Checks if a path is ignored given the [`Gitignore`]
-    pub fn is_ignored(rel_path: &Path, ignore: &Gitignore, is_dir: bool) -> bool {
+    fn is_ignored_inner(rel_path: &Path, ignore: &Gitignore, is_dir: bool) -> bool {
         ignore.matched_path_or_any_parents(rel_path, is_dir).is_ignore()
         || DEFAULT_IGNORE_LIST.contains(&path_to_string(rel_path).as_str())
     }

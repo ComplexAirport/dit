@@ -12,16 +12,12 @@ impl IndexMgr {
     pub fn add_files(
         &mut self,
         paths: impl IntoIterator<Item = impl AsRef<Path>>,
-        blob_mgr: &BlobMgr,
-        tree_mgr: &TreeMgr,
-        commit_mgr: &CommitMgr,
-        branch_mgr: &BranchMgr
+        blob_mgr: &BlobMgr
     ) -> DitResult<()> {
         for file_path in paths {
             let file_path = file_path.as_ref();
             let rel_path = self.repo.rel_path(file_path)?;
-            let (untracked, _) = self.identify_changes(&rel_path,
-                                                       tree_mgr, commit_mgr, branch_mgr)?;
+            let untracked = self.get_untracked_change(&rel_path)?;
             match &untracked {
                 Change::New(NewFile { hash, fp })
                 | Change::Modified(ModifiedFile { hash, fp, .. }) => {
@@ -82,10 +78,7 @@ impl IndexMgr {
         branch_mgr: &BranchMgr
     ) -> DitResult<()> {
         let tracked_changes = self.get_all_tracked_changes(tree_mgr, commit_mgr, branch_mgr)?;
-        let tracked_paths = tracked_changes
-            .iter()
-            .map(|x| &x.0);
-
+        let tracked_paths = tracked_changes.keys();
         self.unstage_files(tracked_paths, tree_mgr, commit_mgr, branch_mgr)
     }
 }

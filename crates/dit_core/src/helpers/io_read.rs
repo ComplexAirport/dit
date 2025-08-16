@@ -42,3 +42,13 @@ pub fn get_buf_reader(path: &Path) -> DitResult<BufReader<File>> {
         .map(BufReader::new)
         .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
 }
+
+/// Creates and returns a [`BufReader`] with specified capacity and maps the error
+/// to [`FsError`]
+///
+/// Note: returns an error if the file doesn't exist
+pub fn get_buf_reader_with_cap(cap: usize, path: &Path) -> DitResult<BufReader<File>> {
+    File::open(path)
+        .map(|f| BufReader::with_capacity(cap, f))
+        .map_err(|_| FsError::FileOpenError(path_to_string(path)).into())
+}

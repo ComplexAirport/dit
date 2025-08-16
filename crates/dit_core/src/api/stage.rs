@@ -9,9 +9,6 @@ impl Dit {
         self.index_mgr()?.borrow_mut().add_files(
             paths,
             &self.blob_mgr().borrow(),
-            &self.tree_mgr().borrow(),
-            &self.commit_mgr().borrow(),
-            &self.branch_mgr()?.borrow(),
         )
     }
 

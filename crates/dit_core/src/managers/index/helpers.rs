@@ -11,8 +11,9 @@ use crate::models::{
 };
 use crate::helpers::{hash_file, read_to_string, write_to_file};
 use crate::errors::{DitResult, StagingError};
-use rayon::prelude::*;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use rayon::prelude::*;
 
 /// Manage the index file
 impl IndexMgr {
@@ -56,7 +57,7 @@ impl IndexMgr {
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
         branch_mgr: &BranchMgr,
-    ) -> DitResult<Vec<(PathBuf, Change)>> {
+    ) -> DitResult<BTreeMap<PathBuf, Change>> {
         self.index.files
             .par_iter()
             .filter_map(|(rel_path, entry)| {
@@ -69,26 +70,40 @@ impl IndexMgr {
                     Err(e) => Some(Err(e))
                 }
             })
-            .collect::<DitResult<Vec<(PathBuf, Change)>>>()
+            .collect::<DitResult<BTreeMap<PathBuf, Change>>>()
     }
 
     /// Returns all untracked changes
     pub fn get_all_untracked_changes(
        &self,
        ignore_mgr: &IgnoreMgr
-    ) -> DitResult<Vec<(PathBuf, Change)>> {
-        let mut files = Vec::new();
+    ) -> DitResult<BTreeMap<PathBuf, Change>> {
+        let mut changed_files = BTreeMap::new(); // use BTreeMap for a sorted result
+        let mut unchanged_file = HashMap::new();
         ignore_mgr.walk_dir_files(self.repo.repo_path(), |abs_path| {
             let rel_path = self.repo.rel_path(&abs_path)?;
             let change = self.get_untracked_change(&rel_path)?;
             if let Change::New(_) | Change::Modified(_) | Change::Deleted(_) = change {
-                files.push((rel_path, change));
-            };
-
+                changed_files.insert(rel_path, change);
+            } else {
+                unchanged_file.insert(rel_path, change);
+            }
             Ok(())
         })?;
 
-        Ok(files)
+        // Detect deleted files
+        for (rel_path, IndexEntry { fp, hash }) in &self.index.files {
+            if !changed_files.contains_key(rel_path)
+                && !unchanged_file.contains_key(rel_path)
+                && !ignore_mgr.is_ignored(rel_path)
+            {
+                changed_files.insert(rel_path.clone(), Change::Deleted(DeletedFile {
+                    fp: fp.clone(), hash: hash.clone()
+                }));
+            }
+        }
+
+        Ok(changed_files)
     }
 
     /// Checks whether there are any tracked changes
