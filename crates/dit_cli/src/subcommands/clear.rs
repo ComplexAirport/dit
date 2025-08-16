@@ -10,7 +10,7 @@ impl HandleSubcommand for ClearSubcommand {
     fn handle(&self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
         dit.clear_stage()?;
-        success!("Cleared the stage.");
+        success!("Cleared the index.");
         Ok(())
     }
 }

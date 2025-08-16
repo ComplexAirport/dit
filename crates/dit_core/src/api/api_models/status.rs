@@ -1,4 +1,4 @@
-﻿use crate::models::ChangeType as CoreChangeType;
+﻿use crate::models::Change;
 use std::path::PathBuf;
 
 
@@ -25,6 +25,7 @@ impl Status {
             ChangeType::Modified => &self.tracked_modifications,
             ChangeType::Deleted => &self.tracked_deletions,
             ChangeType::New => &self.tracked_creations,
+            ChangeType::Unchanged => &self.unchanged_files,
         }
     }
 
@@ -33,6 +34,7 @@ impl Status {
             ChangeType::Modified => &self.unstaged_modifications,
             ChangeType::Deleted => &self.unstaged_deletions,
             ChangeType::New => &self.untracked_files, // NOTE: use get_untracked() instead of this
+            ChangeType::Unchanged => &self.unchanged_files,
         }
     }
 
@@ -72,6 +74,7 @@ impl Status {
             ChangeType::Modified => self.tracked_modifications.push(rel_path),
             ChangeType::Deleted => self.tracked_deletions.push(rel_path),
             ChangeType::New => self.tracked_creations.push(rel_path),
+            ChangeType::Unchanged => self.unchanged_files.push(rel_path),
         }
     }
 
@@ -80,28 +83,27 @@ impl Status {
             ChangeType::Modified => self.unstaged_modifications.push(rel_path),
             ChangeType::Deleted => self.unstaged_deletions.push(rel_path),
             ChangeType::New => self.untracked_files.push(rel_path),
+            ChangeType::Unchanged => self.unchanged_files.push(rel_path),
         }
-    }
-
-    pub fn add_unchanged(&mut self, rel_path: PathBuf) {
-        self.unchanged_files.push(rel_path);
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum ChangeType {
+    New,
     Modified,
     Deleted,
-    New,
+    Unchanged,
 }
 
 impl ChangeType {
-    pub(crate) fn from(change_type: CoreChangeType) -> ChangeType {
+    pub(crate) fn from(change_type: Change) -> ChangeType {
         match change_type {
-            CoreChangeType::New(_) => ChangeType::New,
-            CoreChangeType::Modified(_) => ChangeType::Modified,
-            CoreChangeType::Deleted => ChangeType::Deleted,
-            CoreChangeType::Unchanged(_) => unreachable!()
+            Change::New(_) => ChangeType::New,
+            Change::Modified(_) => ChangeType::Modified,
+            Change::Deleted(_) => ChangeType::Deleted,
+            Change::Unchanged(_) => ChangeType::Unchanged,
+            _ => unreachable!()
         }
     }
 }

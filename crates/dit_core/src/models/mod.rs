@@ -1,10 +1,13 @@
-﻿mod tree;
-mod commit;
-
-mod stage;
-#[macro_use]
+﻿#[macro_use]
 mod macros;
+mod tree;
+mod commit;
+mod file_fingerprint;
+mod index;
+mod change;
 
 pub use tree::*;
 pub use commit::*;
-pub use stage::*;
+pub use index::*;
+pub use change::*;
+pub use file_fingerprint::*;

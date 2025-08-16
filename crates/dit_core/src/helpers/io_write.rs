@@ -6,7 +6,7 @@ use crate::helpers::{
     temp_file::create_temp_file,
     hashing::HashingWriter,
     path::path_to_string,
-    constants::BUFFER_SIZE,
+    constants::HASHING_BUFFER_SIZE,
 };
 use crate::errors::{DitResult, FsError, OtherError};
 use std::fs;
@@ -44,28 +44,6 @@ pub fn copy_file(src: &Path, dest: &Path) -> DitResult<()> {
     Ok(())
 }
 
-
-/// Reads data from [`BufReader`] and writes to a [`BufWriter`] mapping the error to
-/// [`FsError`]
-pub fn copy_file_buffered(
-    reader: &mut BufReader<File>,
-    writer: &mut BufWriter<File>,
-    filename: &Path,
-) -> DitResult<()>
-{
-    let mut buffer = [0; BUFFER_SIZE];
-    loop {
-        let n = read_from_buf_reader(reader, &mut buffer, filename)?;
-        if n == 0 {
-            break;
-        }
-        write_to_buf_writer(writer, &buffer[..n], filename)?;
-    }
-
-    Ok(())
-}
-
-
 /// Reads data from [`BufReader`] and writes to a [`BufWriter`] mapping the error to
 /// [`FsError`] while also calculating the content hash. Returns the hash.
 pub fn copy_file_hashed(src: &Path, dest_path: &Path, dest_file: File) -> DitResult<String>
@@ -73,9 +51,9 @@ pub fn copy_file_hashed(src: &Path, dest_path: &Path, dest_file: File) -> DitRes
     let src_file = File::open(src)
         .map_err(|_| FsError::FileOpenError(path_to_string(src)))?;
 
-    let mut reader = BufReader::with_capacity(BUFFER_SIZE, src_file);
+    let mut reader = BufReader::with_capacity(HASHING_BUFFER_SIZE, src_file);
 
-    let writer = BufWriter::with_capacity(BUFFER_SIZE, dest_file);
+    let writer = BufWriter::with_capacity(HASHING_BUFFER_SIZE, dest_file);
     let mut hasher = HashingWriter::new(writer);
 
     io::copy(&mut reader, &mut hasher)

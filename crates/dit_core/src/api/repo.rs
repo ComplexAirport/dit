@@ -11,8 +11,7 @@ pub struct Repo {
     dit_root: PathBuf,
     blobs_root: PathBuf,
     trees_root: PathBuf,
-    stage_root: PathBuf,
-    stage_file: PathBuf,
+    index_file: PathBuf,
     commits_root: PathBuf,
     branches_root: PathBuf,
     head_file: PathBuf,
@@ -35,21 +34,20 @@ impl Repo {
         let dit_root = repo_path.join(DIT_ROOT);
         let blobs_root = repo_path.join(BLOBS_ROOT);
         let trees_root = repo_path.join(TREES_ROOT);
-        let stage_root = repo_path.join(STAGE_ROOT);
         let commits_root = repo_path.join(COMMITS_ROOT);
         let branches_root = repo_path.join(BRANCHES_ROOT);
 
         let component_dirs = [
-            &dit_root, &blobs_root, &trees_root, &stage_root, &commits_root, &branches_root
+            &dit_root, &blobs_root, &trees_root, &commits_root, &branches_root
         ];
 
         /*************************
         * Component Files
         *************************/
-        let stage_file = repo_path.join(STAGE_FILE);
+        let index_file = repo_path.join(INDEX_FILE);
         let head_file = repo_path.join(HEAD_FILE);
         let component_files = [
-            &stage_file, &head_file
+            &index_file, &head_file
         ];
 
         for component_dir in component_dirs {
@@ -61,12 +59,10 @@ impl Repo {
         }
 
         let ignore_file = repo_path.join(IGNORE_FILE);
-
         Ok(Self {
             repo_path, dit_root, blobs_root,
-            trees_root, stage_root, stage_file,
-            commits_root, branches_root, head_file,
-            ignore_file
+            trees_root, index_file, commits_root,
+            branches_root, head_file, ignore_file
         })
     }
 
@@ -114,14 +110,9 @@ impl Repo {
         &self.trees_root
     }
 
-    /// Returns the [`STAGE_ROOT`] path
-    pub fn stage(&self) -> &Path {
-        &self.stage_root
-    }
-
-    /// Returns the [`STAGE_FILE`] path
-    pub fn stage_file(&self) -> &Path {
-        &self.stage_file
+    /// Returns the [`INDEX_FILE`] path
+    pub fn index_file(&self) -> &Path {
+        &self.index_file
     }
 
     /// Returns the [`COMMITS_ROOT`] path

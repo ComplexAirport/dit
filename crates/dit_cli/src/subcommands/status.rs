@@ -34,7 +34,7 @@ impl HandleSubcommand for StatusSubcommand {
         let status =  dit.get_status()?;
 
         if status.has_any_tracked() {
-            println!("Changed to be commited:");
+            println!("Changes to be commited:");
             for path in status.get_tracked(ChangeType::New) {
                 println!("\tnew file: {}", style(path_to_string(path)).green().bold());
             }

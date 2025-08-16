@@ -21,7 +21,7 @@ impl HandleSubcommand for AddSubcommand {
             .map(|p| resolve_absolute_path(p))
             .collect::<DitResult<Vec<_>>>()?;
 
-        dit.stage_files(paths)?;
+        dit.add_files(paths)?;
 
         success!("Staged the files successfully");
 

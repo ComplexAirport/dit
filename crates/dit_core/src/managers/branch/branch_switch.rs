@@ -1,7 +1,7 @@
 use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
 use crate::managers::commit::CommitMgr;
-use crate::managers::stage::StageMgr;
+use crate::managers::index::IndexMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::ignore::IgnoreMgr;
 use crate::errors::{BranchError, DitResult};
@@ -50,7 +50,7 @@ impl BranchMgr {
         blob_mgr: &BlobMgr,
         tree_mgr: &TreeMgr,
         commit_mgr: &CommitMgr,
-        stage_mgr: &mut StageMgr,
+        index_mgr: &mut IndexMgr,
         ignore_mgr: &IgnoreMgr,
     ) -> DitResult<()> {
         let name = name.as_ref();
@@ -61,9 +61,9 @@ impl BranchMgr {
         }
 
         if is_hard {
-            self.prepare_stage_for_switch_hard(blob_mgr, stage_mgr)?;
+            self.prepare_stage_for_switch_hard(tree_mgr, commit_mgr, index_mgr, self)?;
         } else { // todo: change this behavior?
-            self.prepare_stage_for_switch_soft(name, stage_mgr)?;
+            self.prepare_stage_for_switch_soft(name, tree_mgr, commit_mgr, index_mgr, self)?;
         }
 
         // Get the commit tree
@@ -72,7 +72,7 @@ impl BranchMgr {
             BTreeMap::new()
         } else {
             let target_commit = commit_mgr.get_commit(&target_commit_hash)?;
-            tree_mgr.get_tree(target_commit.tree)?.files
+            tree_mgr.get_tree(target_commit.tree)?.index.files
         };
 
         // Remove the current project root
@@ -80,9 +80,9 @@ impl BranchMgr {
 
         // Create the files in the commit
         files.into_par_iter()
-            .try_for_each(|(rel_path, blob_hash)| {
+            .try_for_each(|(rel_path, entry)| {
                 create_file_all(&rel_path)?;
-                let src = blob_mgr.get_blob_path(blob_hash);
+                let src = blob_mgr.get_blob_path(entry.hash);
                 copy_file(&src, &rel_path)
             })?;
 
@@ -94,28 +94,30 @@ impl BranchMgr {
 
 /// Private
 impl BranchMgr {
-    /// Resets the stage if it's not empty
+    /// Resets the index if it's not empty
     pub(super) fn prepare_stage_for_switch_hard(
         &self,
-        blob_mgr: &BlobMgr,
-        stage_mgr: &mut StageMgr
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
+        index_mgr: &mut IndexMgr,
+        branch_mgr: &BranchMgr,
     ) -> DitResult<()>
     {
-        if stage_mgr.is_staged() {
-            stage_mgr.clear_stage_all(blob_mgr)?;
-        }
-        Ok(())
+        index_mgr.unstage_all(tree_mgr, commit_mgr, branch_mgr)
     }
 
-    /// If the stage is not empty, returns an error. Otherwise, everything is OK.
+    /// If the index is not empty, returns an error. Otherwise, everything is OK.
     pub(super) fn prepare_stage_for_switch_soft<S>(
         &self,
         switch_to_branch: S,
-        stage_mgr: &mut StageMgr
+        tree_mgr: &TreeMgr,
+        commit_mgr: &CommitMgr,
+        index_mgr: &mut IndexMgr,
+        branch_mgr: &BranchMgr,
     ) -> DitResult<()>
     where S: Into<String>
     {
-        if stage_mgr.is_staged() {
+        if index_mgr.are_tracked_changes(tree_mgr, commit_mgr, branch_mgr)? {
             Err(BranchError::CannotSwitchBranches(switch_to_branch.into()).into())
         } else {
             Ok(())

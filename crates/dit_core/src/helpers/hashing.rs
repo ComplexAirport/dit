@@ -1,8 +1,8 @@
-﻿use std::io::Write;
+﻿use crate::helpers::{get_buf_reader, read_from_buf_reader, HASHING_BUFFER_SIZE};
+use crate::errors::DitResult;
+use std::io::Write;
 use std::path::Path;
 use blake3::Hasher;
-use crate::errors::{DitResult, FsError};
-use crate::helpers::path_to_string;
 
 /// Writer to a writer and calculates the hash
 pub struct HashingWriter<W: Write> {
@@ -37,7 +37,7 @@ impl<W: Write> Write for HashingWriter<W> {
     fn flush(&mut self) -> std::io::Result<()> { self.inner.flush() }
 }
 
-
+#[derive(Debug, Default)]
 pub struct DitHasher {
     hasher: Hasher
 }
@@ -64,7 +64,16 @@ impl DitHasher {
 
 
 pub fn hash_file(path: &Path) -> DitResult<String> {
-    let content = std::fs::read(path)
-        .map_err(|_| FsError::FileReadError(path_to_string(path)))?;
-    Ok(blake3::hash(&content).to_hex().to_string())
+    let mut reader = get_buf_reader(path)?;
+    let mut hasher = DitHasher::new();
+
+    let mut buf = vec![0; HASHING_BUFFER_SIZE];
+    loop {
+        let n = read_from_buf_reader(&mut reader, &mut buf, path)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(hasher.finalize_string())
 }

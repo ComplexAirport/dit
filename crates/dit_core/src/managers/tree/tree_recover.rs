@@ -1,5 +1,5 @@
 use crate::errors::DitResult;
-use crate::helpers::{create_file_all, copy_file};
+use crate::helpers::create_file_all;
 use crate::managers::blob::BlobMgr;
 use crate::managers::tree::TreeMgr;
 use rayon::prelude::*;
@@ -14,16 +14,14 @@ impl TreeMgr {
         blob_mgr: &mut BlobMgr
     ) -> DitResult<()>
     {
-        let tree = self.get_tree(tree_hash)?;
-        let files = tree.files;
+        let index = self.get_tree(tree_hash)?.index;
 
-        files.into_par_iter()
-            .try_for_each(|(rel_path, blob_hash)| {
+        index.files
+            .into_par_iter()
+            .try_for_each(|(rel_path, entry)| {
                 let abs_path = self.repo.abs_path_from_repo(&rel_path, true)?;
                 create_file_all(&abs_path)?;
-                copy_file(&abs_path, &blob_mgr.get_blob_path(blob_hash))
-            })?;
-
-        Ok(())
+                blob_mgr.recover_blob(entry.hash, &rel_path)
+            })
     }
 }

@@ -1,6 +1,6 @@
 ﻿//! This module provides the API to work with the Dit version control system
 use crate::commit::CommitMgr;
-use crate::stage::StageMgr;
+use crate::index::IndexMgr;
 use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
@@ -18,7 +18,7 @@ pub struct Dit {
     blob_mgr: OnceCell<RefCell<BlobMgr>>,
     tree_mgr: OnceCell<RefCell<TreeMgr>>,
     commit_mgr: OnceCell<RefCell<CommitMgr>>,
-    stage_mgr: OnceCell<RefCell<StageMgr>>,
+    index_mgr: OnceCell<RefCell<IndexMgr>>,
     branch_mgr: OnceCell<RefCell<BranchMgr>>,
     ignore_mgr: OnceCell<RefCell<IgnoreMgr>>
 }
@@ -35,7 +35,7 @@ impl Dit {
             repo: repo.clone(),
             blob_mgr: OnceCell::new(),
             tree_mgr: OnceCell::new(),
-            stage_mgr: OnceCell::new(),
+            index_mgr: OnceCell::new(),
             commit_mgr: OnceCell::new(),
             branch_mgr: OnceCell::new(),
             ignore_mgr: OnceCell::new(),
@@ -57,10 +57,10 @@ impl Dit {
         self.tree_mgr.get_or_init(|| RefCell::new(TreeMgr::from(self.repo.clone())))
     }
 
-    /// Returns the stage manager
-    pub fn stage_mgr(&self) -> DitResult<&RefCell<StageMgr>> {
-        self.stage_mgr.get_or_try_init(|| {
-            Ok(RefCell::new(StageMgr::from(self.repo.clone())?))
+    /// Returns the index manager
+    pub fn index_mgr(&self) -> DitResult<&RefCell<IndexMgr>> {
+        self.index_mgr.get_or_try_init(|| {
+            Ok(RefCell::new(IndexMgr::from(self.repo.clone())?))
         })
     }
 

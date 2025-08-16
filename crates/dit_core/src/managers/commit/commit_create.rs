@@ -1,12 +1,11 @@
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
-use crate::managers::stage::StageMgr;
+use crate::managers::index::IndexMgr;
 use crate::managers::tree::TreeMgr;
-use crate::errors::{DitResult, OtherError};
-use crate::models::{Commit, Stage};
-use std::time::SystemTime;
+use crate::models::{Commit, Index};
 use crate::helpers::DitHasher;
-use crate::managers::blob::BlobMgr;
+use crate::errors::{DitResult, OtherError};
+use std::time::SystemTime;
 
 /// Public
 impl CommitMgr {
@@ -15,9 +14,8 @@ impl CommitMgr {
         &mut self,
         author: S1,
         message: S2,
-        blob_mgr: &BlobMgr,
         tree_mgr: &mut TreeMgr,
-        stage_mgr: &mut StageMgr,
+        index_mgr: &mut IndexMgr,
         branch_mgr: &mut BranchMgr,
     ) -> DitResult<()>
     where
@@ -29,11 +27,10 @@ impl CommitMgr {
         let message = message.into();
 
         let commit_hash = self.create_commit_inner(
-            author, message, stage_mgr.get_stage(), parent, blob_mgr, tree_mgr,
+            author, message, index_mgr.index(), parent, tree_mgr,
         )?;
 
-        branch_mgr.set_head_commit(commit_hash)?;
-        stage_mgr.clear_stage_file()
+        branch_mgr.set_head_commit(commit_hash)
     }
 }
 
@@ -46,19 +43,11 @@ impl CommitMgr {
         &self,
         author: String,
         message: String,
-        stage: &Stage,
+        index: &Index,
         parent_commit_hash: Option<String>,
-        blob_mgr: &BlobMgr,
         tree_mgr: &TreeMgr,
     ) -> DitResult<String> {
-        let parent_tree_hash = if let Some(parent_commit_hash) = &parent_commit_hash {
-            let parent_commit = self.get_commit(parent_commit_hash)?;
-            Some(parent_commit.tree)
-        } else {
-            None
-        };
-
-        let tree_hash = tree_mgr.create_tree(stage, parent_tree_hash, blob_mgr)?;
+        let tree_hash = tree_mgr.create_tree(index.clone())?;
 
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)

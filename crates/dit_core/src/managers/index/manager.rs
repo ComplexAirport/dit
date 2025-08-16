@@ -8,7 +8,7 @@
 //! ```json
 //! {
 //!     "files": {
-//!         "src/main.py": "D:\test_project\.dit\stage\main.py"
+//!         "src/main.py": "D:\test_project\.dit\index\main.py"
 //!     }
 //! }
 //! ```
@@ -18,24 +18,24 @@
 
 use crate::Repo;
 use crate::errors::DitResult;
-use crate::models::Stage;
+use crate::models::Index;
 use std::sync::Arc;
 
-/// Manages the staged files. See [`crate::stage`] for more info
-pub struct StageMgr {
+/// Manages the staged files. See [`crate::index`] for more info
+pub struct IndexMgr {
     pub(super) repo: Arc<Repo>,
 
-    pub(super) stage: Stage,
+    pub(super) index: Index,
 }
 
 
-impl StageMgr {
+impl IndexMgr {
     pub fn from(repo: Arc<Repo>) -> DitResult<Self> {
         let mut mgr = Self {
             repo,
-            stage: Stage::default(),
+            index: Index::default(),
         };
-        Self::load_stage_file(&mut mgr)?;
+        Self::load(&mut mgr)?;
         Ok(mgr)
     }
 }

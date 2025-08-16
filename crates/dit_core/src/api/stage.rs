@@ -2,11 +2,11 @@
 use crate::errors::DitResult;
 use std::path::Path;
 
-/// Manipulate the stage
+/// Manipulate the index
 impl Dit {
-    /// Stages a file given the file path
-    pub fn stage_files(&mut self, paths: impl IntoIterator<Item = impl AsRef<Path>>) -> DitResult<()> {
-        self.stage_mgr()?.borrow_mut().stage_files(
+    /// Adds files in their current state to the index
+    pub fn add_files(&mut self, paths: impl IntoIterator<Item = impl AsRef<Path>>) -> DitResult<()> {
+        self.index_mgr()?.borrow_mut().add_files(
             paths,
             &self.blob_mgr().borrow(),
             &self.tree_mgr().borrow(),
@@ -15,15 +15,22 @@ impl Dit {
         )
     }
 
-    /// Unstages the file given the file path
+    /// Unstages files
     pub fn unstage_files(&mut self, paths: impl IntoIterator<Item = impl AsRef<Path>>) -> DitResult<()> {
-        self.stage_mgr()?.borrow_mut().unstage_files(paths)
+        self.index_mgr()?.borrow_mut().unstage_files(
+            paths,
+            &self.tree_mgr().borrow(),
+            &self.commit_mgr().borrow(),
+            &self.branch_mgr()?.borrow(),
+        )
     }
 
-    /// Clears the stage
+    /// Clears the index
     pub fn clear_stage(&mut self) -> DitResult<()> {
-        self.stage_mgr()?.borrow_mut().clear_stage_all(
-            &self.blob_mgr().borrow()
+        self.index_mgr()?.borrow_mut().unstage_all(
+            &self.tree_mgr().borrow(),
+            &self.commit_mgr().borrow(),
+            &self.branch_mgr()?.borrow(),
         )
     }
 }

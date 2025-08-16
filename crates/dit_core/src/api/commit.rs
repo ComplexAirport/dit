@@ -10,9 +10,8 @@ impl Dit {
         self.commit_mgr().borrow_mut().create_commit(
             author,
             message,
-            &self.blob_mgr().borrow(),
             &mut self.tree_mgr().borrow_mut(),
-            &mut self.stage_mgr()?.borrow_mut(),
+            &mut self.index_mgr()?.borrow_mut(),
             &mut self.branch_mgr()?.borrow_mut(),
         )
     }
