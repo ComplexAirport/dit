@@ -15,20 +15,6 @@ pub fn remove_file_if_exists(path: &Path) -> DitResult<()> {
 }
 
 
-/// Removes a directory using [`fs::remove_dir`] and maps the error to [`FsError`]
-pub fn remove_dir(path: &Path) -> DitResult<()> {
-    fs::remove_dir_all(path)
-        .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
-}
-
-
-/// Removes a directory using [`fs::remove_dir_all`] and maps the error to [`FsError`]
-pub fn remove_dir_all(path: &Path) -> DitResult<()> {
-    fs::remove_dir_all(path)
-        .map_err(|_| FsError::DirRemoveError(path_to_string(path)).into())
-}
-
-
 /// Creates a file and all the necessary subdirectories (if they don't exist) and maps
 /// the result to [`FsError`]
 pub fn create_file_all(path: &Path) -> DitResult<()> {
@@ -39,15 +25,6 @@ pub fn create_file_all(path: &Path) -> DitResult<()> {
 
     File::create(path)
         .map_err(|_| FsError::FileCreateError(path_to_string(path)))?;
-
-    Ok(())
-}
-
-
-/// Renames a file using [`fs::rename`] and maps the error to [`FsError`]
-pub fn rename_file(from: &Path, to: &Path) -> DitResult<()> {
-    fs::rename(from, to)
-        .map_err(|_| FsError::FileRenameError(path_to_string(from), path_to_string(to)))?;
 
     Ok(())
 }

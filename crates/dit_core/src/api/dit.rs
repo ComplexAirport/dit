@@ -5,6 +5,7 @@ use crate::branch::BranchMgr;
 use crate::tree::TreeMgr;
 use crate::blob::BlobMgr;
 use crate::ignore::IgnoreMgr;
+use crate::config::ConfigMgr;
 use crate::errors::DitResult;
 use crate::Repo;
 use once_cell::unsync::OnceCell;
@@ -20,7 +21,8 @@ pub struct Dit {
     commit_mgr: OnceCell<RefCell<CommitMgr>>,
     index_mgr: OnceCell<RefCell<IndexMgr>>,
     branch_mgr: OnceCell<RefCell<BranchMgr>>,
-    ignore_mgr: OnceCell<RefCell<IgnoreMgr>>
+    ignore_mgr: OnceCell<RefCell<IgnoreMgr>>,
+    config_mgr: OnceCell<RefCell<ConfigMgr>>,
 }
 
 
@@ -39,6 +41,7 @@ impl Dit {
             commit_mgr: OnceCell::new(),
             branch_mgr: OnceCell::new(),
             ignore_mgr: OnceCell::new(),
+            config_mgr: OnceCell::new(),
         };
 
         Ok(dit)
@@ -80,6 +83,12 @@ impl Dit {
     pub fn ignore_mgr(&self) -> DitResult<&RefCell<IgnoreMgr>> {
         self.ignore_mgr.get_or_try_init(|| {
             Ok(RefCell::new(IgnoreMgr::from(self.repo.clone())?))
+        })
+    }
+
+    pub fn config_mgr(&self) -> DitResult<&RefCell<ConfigMgr>> {
+        self.config_mgr.get_or_try_init(|| {
+            Ok(RefCell::new(ConfigMgr::from(self.repo.clone())?))
         })
     }
 }

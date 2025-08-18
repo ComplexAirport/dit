@@ -16,18 +16,18 @@ pub struct StatusSubcommand {
 
 
 impl HandleSubcommand for StatusSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let dit = Self::require_dit()?;
         let branch_name = dit.get_branch()?;
         let head_commit = dit.get_head_commit()?;
 
         match branch_name {
-            Some(b) => println!("On branch '{}'", style(b).green().bold()),
+            Some(b) => println!("On branch {}", style(b).green().bold()),
             None => println!("No current branch")
         }
 
         match head_commit {
-            Some(h) => println!("Parent commit: '{}'", style(h).yellow().bold()),
+            Some(h) => println!("Parent commit: {}", style(h).blue().bold()),
             None => println!("No commits yet")
         }
 

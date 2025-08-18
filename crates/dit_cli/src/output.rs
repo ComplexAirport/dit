@@ -41,3 +41,14 @@ macro_rules! hint {
         )
     };
 }
+
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {
+        println!(
+            "{} {}",
+            console::style("[i]").cyan().bold(),
+            format!($($arg)*)
+        )
+    };
+}

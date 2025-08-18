@@ -3,21 +3,23 @@
 mod blob;
 mod tree;
 mod commit;
-mod stage;
+mod index;
 mod branch;
 mod project;
 mod fs;
 mod other;
+mod config;
 
 pub use self::{
     blob::BlobError,
     tree::TreeError,
     commit::CommitError,
-    stage::StagingError,
+    index::IndexError,
     branch::BranchError,
     project::ProjectError,
     fs::FsError,
     other::OtherError,
+    config::ConfigError,
 };
 
 #[derive(Error, Debug)]
@@ -25,8 +27,8 @@ pub enum DitCoreError {
     #[error("branch error: {0}")]
     BranchError(#[from] BranchError),
 
-    #[error("staging error: {0}")]
-    StagingError(#[from] StagingError),
+    #[error("index error: {0}")]
+    IndexError(#[from] IndexError),
 
     #[error("commit error: {0}")]
     CommitError(#[from] CommitError),
@@ -45,6 +47,12 @@ pub enum DitCoreError {
 
     #[error("io error: {0}")]
     IOError(#[from] std::io::Error),
+
+    #[error("config error: {0}")]
+    ConfigError(#[from] ConfigError),
+
+    #[error("serialization error: {0}")]
+    SerializationError(#[from] serde_json::Error),
 
     #[error("error: {0}")]
     OtherError(#[from] OtherError),

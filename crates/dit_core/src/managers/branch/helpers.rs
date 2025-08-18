@@ -1,11 +1,11 @@
 use crate::errors::DitResult;
-use crate::helpers::{read_to_string, write_to_file};
+use crate::helpers::{read_to_string};
 use crate::managers::branch::BranchMgr;
 use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
 use crate::models::Tree;
 use std::path::PathBuf;
-
+use std::fs;
 
 /// Load/store from/to the [`HEAD_FILE`]
 ///
@@ -46,16 +46,16 @@ impl BranchMgr {
         let head_file = self.repo.head_file();
 
         if let Some(curr_branch) = &self.curr_branch {
-            write_to_file(head_file, curr_branch)?;
+            fs::write(head_file, curr_branch)?;
             let branch_file = self.repo.branches().join(curr_branch);
             match &self.curr_commit {
-                Some(curr_commit) => write_to_file(&branch_file, curr_commit)?,
-                None => write_to_file(&branch_file, "")?,
+                Some(curr_commit) => fs::write(&branch_file, curr_commit)?,
+                None => fs::write(&branch_file, "")?,
             }
         } else {
             match &self.curr_commit {
-                Some(head) => write_to_file(head_file, format!(":{head}"))?,
-                None => write_to_file(head_file, "")?,
+                Some(head) => fs::write(head_file, format!(":{head}"))?,
+                None => fs::write(head_file, "")?,
             }
         }
 
@@ -102,7 +102,7 @@ impl BranchMgr {
         let branch_file = self.repo.branches().join(branch);
 
         if branch_file.is_file() {
-            write_to_file(&branch_file, commit)?;
+            fs::write(&branch_file, commit)?;
         }
         Ok(())
     }

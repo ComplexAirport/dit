@@ -2,7 +2,7 @@ use thiserror::Error;
 
 /// Errors related to staging
 #[derive(Error, Debug)]
-pub enum StagingError {
+pub enum IndexError {
     #[error("Failed to serialize the index file")]
     SerializationError,
 

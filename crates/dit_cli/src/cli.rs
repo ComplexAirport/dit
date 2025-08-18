@@ -21,10 +21,11 @@ pub enum CommandKind {
     Commit(CommitSubcommand),
     Reset(ResetSubcommand),
     Clear(ClearSubcommand),
+    Config(ConfigSubcommand),
 }
 
 impl CommandKind {
-    pub fn handle(&self) -> CliResult<()> {
+    pub fn handle(self) -> CliResult<()> {
         match self {
             Self::Init(cmd) => cmd.handle(),
             Self::History(cmd) => cmd.handle(),
@@ -35,6 +36,7 @@ impl CommandKind {
             Self::Commit(cmd) => cmd.handle(),
             Self::Reset(cmd) => cmd.handle(),
             Self::Clear(cmd) => cmd.handle(),
+            Self::Config(cmd) => cmd.handle(),
         }
     }
 }

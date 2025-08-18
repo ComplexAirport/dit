@@ -20,7 +20,7 @@ pub struct ResetSubcommand {
 
 
 impl HandleSubcommand for ResetSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         match self.mode {
             ResetMode::Soft => self.handle_soft(),
             ResetMode::Mixed => self.handle_mixed(),

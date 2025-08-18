@@ -1,23 +1,11 @@
 ﻿use crate::errors::{DitResult, FsError};
-use crate::errors::OtherError::GlobBuildError;
-use ignore::gitignore::{GitignoreBuilder, Gitignore};
 use std::path::{Path, PathBuf};
 use std::fs;
-
-/// Builds a [`Gitignore`] given a file path
-pub fn ignore_from_file(root: &Path, ignore_file: &Path) -> DitResult<Gitignore> {
-    let mut builder = GitignoreBuilder::new(root);
-    builder.add(ignore_file);
-    builder
-        .build()
-        .map_err(|_| GlobBuildError(path_to_string(ignore_file)).into())
-}
 
 
 /// Returns the current working directory
 pub fn get_cwd() -> DitResult<PathBuf> {
-    std::env::current_dir()
-        .map_err(|_| FsError::GetCwdError.into())
+    Ok(std::env::current_dir()?)
 }
 
 

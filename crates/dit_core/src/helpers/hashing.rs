@@ -1,6 +1,7 @@
-﻿use crate::helpers::{get_buf_reader, get_buf_reader_with_cap, read_from_buf_reader, HASHING_BUFFER_SIZE};
+﻿use crate::helpers::HASHING_BUFFER_SIZE;
 use crate::errors::DitResult;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 use blake3::Hasher;
 
@@ -64,12 +65,12 @@ impl DitHasher {
 
 
 pub fn hash_file(path: &Path) -> DitResult<String> {
-    let mut reader = get_buf_reader_with_cap(HASHING_BUFFER_SIZE, path)?;
+    let mut reader = BufReader::with_capacity(HASHING_BUFFER_SIZE, File::open(path)?);
     let mut hasher = DitHasher::new();
 
     let mut buf = vec![0; HASHING_BUFFER_SIZE];
     loop {
-        let n = read_from_buf_reader(&mut reader, &mut buf, path)?;
+        let n = reader.read(&mut buf)?;
         if n == 0 {
             break;
         }

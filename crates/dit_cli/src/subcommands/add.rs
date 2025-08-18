@@ -2,9 +2,8 @@ use crate::subcommands::HandleSubcommand;
 use crate::error::CliResult;
 use crate::success;
 use clap::Args;
-use dit_core::helpers::resolve_absolute_path;
+use dit_core::helpers::path_to_string;
 use std::path::PathBuf;
-use dit_core::errors::DitResult;
 
 #[derive(Args)]
 pub struct AddSubcommand {
@@ -13,15 +12,16 @@ pub struct AddSubcommand {
 
 
 impl HandleSubcommand for AddSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
 
-        let paths = self.files
-            .iter()
-            .map(|p| resolve_absolute_path(p))
-            .collect::<DitResult<Vec<_>>>()?;
+        let globs = self.files
+            .into_iter()
+            .map(|p| path_to_string(&p));
 
-        dit.add_files(paths)?;
+        let expanded_globs = dit.expand_globs_cwd(globs)?;
+
+        dit.add_files(expanded_globs)?;
 
         success!("Staged the files successfully");
 

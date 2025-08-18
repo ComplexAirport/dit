@@ -1,14 +1,10 @@
-﻿use crate::errors::{CommitError, DitResult};
-use crate::helpers::{read_to_string, write_to_file, path_to_string};
-use crate::impl_read_write_model;
-use serde::{Deserialize, Serialize};
-use std::path::Path;
+﻿use serde::{Deserialize, Serialize};
 
 /// Represents a commit model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Commit {
     /// Represents the committer name and email address \
-    /// Example: "Alice | alice@example.com"
+    /// Example: "Alice <alice@example.com>"
     pub author: String,
 
     /// Represents the commit message \
@@ -29,5 +25,3 @@ pub struct Commit {
     #[serde(skip)]
     pub hash: String,
 }
-
-impl_read_write_model!(Commit, CommitError);

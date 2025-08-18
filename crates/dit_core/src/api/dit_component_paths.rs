@@ -6,3 +6,4 @@ pub const BRANCHES_ROOT: &str = ".dit/branches";
 pub const HEAD_FILE: &str = ".dit/head";
 pub const IGNORE_FILE: &str =  ".ditignore";
 pub const INDEX_FILE: &str = ".dit/index";
+pub const CONFIG_FILE: &str = ".dit/config";

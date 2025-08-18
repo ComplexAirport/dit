@@ -3,6 +3,7 @@ use crate::managers::commit::CommitMgr;
 use crate::managers::tree::TreeMgr;
 use crate::models::{Commit, Tree};
 use crate::errors::DitResult;
+use crate::helpers::DitModel;
 
 /// Load/write to the commits directory
 impl CommitMgr {
@@ -10,7 +11,7 @@ impl CommitMgr {
     pub(super) fn write_commit(&self, commit: &Commit) -> DitResult<()> {
         let path = self.repo.commits().join(&commit.hash);
 
-        commit.write_to(&path)
+        commit.serialize_to(&path)
     }
 
     /// Reads and returns a commit given the commit's hash
@@ -18,7 +19,8 @@ impl CommitMgr {
         let hash = hash.into();
         let path = self.repo.commits().join(&hash);
 
-        let mut commit = Commit::read_from(&path)?;
+        let mut commit = Commit::deserialize_from(&path)?;
+
 
         commit.hash = hash;
 
@@ -44,7 +46,7 @@ impl CommitMgr {
     pub fn get_parents<S: Into<String>>(&self, hash: S) -> DitResult<Vec<String>> {
         let hash = hash.into();
         let path = self.repo.commits().join(&hash);
-        let commit = Commit::read_from(&path)?;
+        let commit = Commit::deserialize_from(&path)?;
         Ok(commit.parents)
     }
 

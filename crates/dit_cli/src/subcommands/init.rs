@@ -9,7 +9,7 @@ pub struct InitSubcommand;
 
 
 impl HandleSubcommand for InitSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let cwd = std::env::current_dir()
             .map_err(|_| DitCliError::CwdError)?;
 

@@ -13,7 +13,7 @@ pub struct UnstageSubcommand {
 
 
 impl HandleSubcommand for UnstageSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
 
         let paths = self.files

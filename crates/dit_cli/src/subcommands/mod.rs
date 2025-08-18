@@ -27,3 +27,6 @@ pub use reset::ResetSubcommand;
 
 mod clear;
 pub use clear::ClearSubcommand;
+
+mod config;
+pub use config::ConfigSubcommand;

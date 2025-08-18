@@ -1,12 +1,12 @@
-use std::fs::File;
 use crate::managers::blob::BlobMgr;
 use crate::helpers::{
     compress_file, compress_file_hashed,
     create_temp_file, decompress_file,
-    remove_file_if_exists, rename_file
+    remove_file_if_exists,
 };
 use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
+use std::fs;
 
 /// API
 impl BlobMgr {
@@ -15,7 +15,7 @@ impl BlobMgr {
         let (_, temp_file_path) = create_temp_file(self.repo.blobs())?;
         let hash = compress_file_hashed(source, &temp_file_path)?;
         let dest = self.get_blob_path(hash.clone());
-        rename_file(&temp_file_path, &dest)?;
+        fs::rename(&temp_file_path, &dest)?;
         Ok(hash)
     }
 

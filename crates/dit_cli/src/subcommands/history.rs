@@ -3,6 +3,7 @@ use crate::error::CliResult;
 use chrono::{DateTime, Local, TimeZone, Utc};
 use comfy_table::{Table, ContentArrangement, presets::UTF8_FULL_CONDENSED};
 use clap::Args;
+use console::style;
 
 #[derive(Args)]
 pub struct HistorySubcommand {
@@ -15,13 +16,13 @@ pub struct HistorySubcommand {
 
 
 impl HandleSubcommand for HistorySubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
 
         let branch_name = dit.get_branch()?;
         let history = dit.get_history(self.count)?;
         let title = if let Some(branch_name) = branch_name {
-            format!("History for branch '{branch_name}'")
+            format!("History for branch {}", style(branch_name).green().bold())
         } else {
             String::from("History (detached HEAD)")
         };

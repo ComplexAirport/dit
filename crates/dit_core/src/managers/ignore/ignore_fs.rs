@@ -1,7 +1,8 @@
 ﻿use crate::managers::ignore::manager::{IgnoreMgr, DEFAULT_IGNORE_LIST};
-use crate::helpers::{path_to_string, remove_dir, remove_file_if_exists};
+use crate::helpers::{expand_globs, get_cwd, path_to_string, remove_file_if_exists};
 use crate::errors::DitResult;
 use std::path::{Path, PathBuf};
+use std::fs;
 use ignore::gitignore::Gitignore;
 use jwalk::WalkDir;
 
@@ -65,7 +66,7 @@ impl IgnoreMgr {
 
         for (path, is_dir) in to_delete {
             if is_dir {
-                remove_dir(&path)?;
+                fs::remove_dir_all(&path)?;
             } else {
                 remove_file_if_exists(&path)?;
             }
@@ -74,9 +75,25 @@ impl IgnoreMgr {
         Ok(())
     }
 
+
+    /// Expands the given glob patterns to file paths relative to the
+    /// current working directory
+    pub fn expand_globs_cwd<I>(&self, globs: I) -> DitResult<Vec<PathBuf>>
+    where I: Iterator,
+          I::Item: AsRef<str>
+    {
+        let cwd = get_cwd()?;
+
+        Ok(expand_globs(&cwd, globs, self.ignore.clone())?
+            .iter()
+            .map(|e| e.path().to_path_buf())
+            .collect())
+    }
+
     pub fn is_ignored(&self, path: &Path) -> bool {
         Self::is_ignored_inner(path, &self.ignore, path.is_dir())
     }
+
 
     /// Checks if a path is ignored given the [`Gitignore`]
     fn is_ignored_inner(rel_path: &Path, ignore: &Gitignore, is_dir: bool) -> bool {

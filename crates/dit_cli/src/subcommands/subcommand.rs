@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use dit_core::{Dit, dit_component_paths::DIT_ROOT};
 
 pub trait HandleSubcommand {
-    fn handle(&self) -> CliResult<()>;
+    fn handle(self) -> CliResult<()>;
 
     /// If the dit is initialized in the curren directory, returns a [`Dit`] instance.
     /// Otherwise, prints an error to stderr and exits

@@ -34,7 +34,7 @@ pub struct BranchSubcommand {
 
 
 impl HandleSubcommand for BranchSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         match &self.command {
             BranchCommand::New { name } => self.handle_new(name),
             BranchCommand::Switch { name, hard } => self.handle_switch(name, *hard),

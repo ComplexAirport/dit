@@ -9,14 +9,14 @@ pub struct CommitSubcommand {
     message: String,
 
     #[arg(short, long)]
-    author: String
+    author: Option<String>
 }
 
 
 impl HandleSubcommand for CommitSubcommand {
-    fn handle(&self) -> CliResult<()> {
+    fn handle(self) -> CliResult<()> {
         let mut dit = Self::require_dit()?;
-        dit.commit(&self.author, &self.message)?;
+        dit.commit(self.message, self.author)?;
         success!("Committed the changes");
         Ok(())
     }

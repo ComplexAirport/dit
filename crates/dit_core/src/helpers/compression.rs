@@ -1,14 +1,15 @@
+use crate::helpers::{DitHasher, ZSTD_BUFFER_SIZE, ZSTD_COMPRESSION_LEVEL};
 use crate::errors::DitResult;
-use crate::helpers::{get_buf_reader_with_cap, get_buf_writer_with_cap, DitHasher, ZSTD_BUFFER_SIZE, ZSTD_COMPRESSION_LEVEL};
+use std::io::{self, BufReader, BufWriter, Read, Write};
 use zstd::stream::{write::Encoder, read::Decoder};
-use std::io::{self, Read, Write};
+use std::fs::File;
 use std::path::Path;
 
 
 /// Compresses a file using the ZSTD algorithm
 pub fn compress_file(src: &Path, dest: &Path) -> DitResult<()> {
-    let mut reader = get_buf_reader_with_cap(ZSTD_BUFFER_SIZE, src)?;
-    let writer = get_buf_writer_with_cap(ZSTD_BUFFER_SIZE, dest)?;
+    let mut reader = BufReader::with_capacity(ZSTD_BUFFER_SIZE, File::open(src)?);
+    let writer = BufWriter::with_capacity(ZSTD_BUFFER_SIZE, File::create(dest)?);
     let mut encoder = Encoder::new(writer, ZSTD_COMPRESSION_LEVEL as i32)?;
 
     io::copy(&mut reader, &mut encoder)?;
@@ -21,8 +22,8 @@ pub fn compress_file(src: &Path, dest: &Path) -> DitResult<()> {
 
 /// Compresses a file using the ZSTD algorithm and calculates its hash
 pub fn compress_file_hashed(src: &Path, dest: &Path) -> DitResult<String> {
-    let mut reader = get_buf_reader_with_cap(ZSTD_BUFFER_SIZE, src)?;
-    let writer = get_buf_writer_with_cap(ZSTD_BUFFER_SIZE, dest)?;
+    let mut reader = BufReader::with_capacity(ZSTD_BUFFER_SIZE, File::open(src)?);
+    let writer = BufWriter::with_capacity(ZSTD_BUFFER_SIZE, File::create(dest)?);
     let mut encoder = Encoder::new(writer, ZSTD_COMPRESSION_LEVEL as i32)?;
 
     let mut hasher = DitHasher::new();
@@ -43,13 +44,13 @@ pub fn compress_file_hashed(src: &Path, dest: &Path) -> DitResult<String> {
     Ok(hasher.finalize_string())
 }
 
-
 /// Decompresses a file using ZSTD algorithm
 pub fn decompress_file(src: &Path, dest: &Path) -> DitResult<()> {
-    let reader = get_buf_reader_with_cap(ZSTD_BUFFER_SIZE, src)?;
+    let reader = BufReader::with_capacity(ZSTD_BUFFER_SIZE, File::open(src)?);
     let mut decoder = Decoder::new(reader)?;
-    let mut writer = get_buf_writer_with_cap(ZSTD_BUFFER_SIZE, dest)?;
+    let mut writer = BufWriter::with_capacity(ZSTD_BUFFER_SIZE, File::create(dest)?);
     io::copy(&mut decoder, &mut writer)?;
     writer.flush()?;
     Ok(())
 }
+

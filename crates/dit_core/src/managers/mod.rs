@@ -4,3 +4,4 @@ pub(crate) mod commit;
 pub(crate) mod index;
 pub(crate) mod branch;
 pub(crate) mod ignore;
+pub(crate) mod config;

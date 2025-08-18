@@ -9,8 +9,8 @@ use crate::models::{
     IndexEntry, ModifiedFile,
     NewFile, UnchangedFile
 };
-use crate::helpers::{hash_file, read_to_string, write_to_file};
-use crate::errors::{DitResult, StagingError};
+use crate::helpers::{hash_file, DitModel};
+use crate::errors::DitResult;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use rayon::prelude::*;
@@ -19,29 +19,13 @@ use rayon::prelude::*;
 impl IndexMgr {
     /// Updates the index based on the index file
     pub(super) fn load(&mut self) -> DitResult<()> {
-        let path = self.repo.index_file();
-        let serialized = read_to_string(path)?;
-
-        let index = if serialized.is_empty() {
-            Index::default()
-        } else {
-            serde_json::from_str(&serialized)
-                .map_err(|_| StagingError::DeserializationError)?
-        };
-
-        self.index = index;
-
+        self.index = Index::deserialize_from(self.repo.index_file())?;
         Ok(())
     }
 
     /// Updates the index file based on the current state
     pub(super) fn store(&self) -> DitResult<()> {
-        let path = self.repo.index_file();
-
-        let serialized = serde_json::to_string_pretty(&self.index)
-            .map_err(|_| StagingError::SerializationError)?;
-
-        write_to_file(path, serialized)
+        self.index.serialize_to(self.repo.index_file())
     }
 }
 

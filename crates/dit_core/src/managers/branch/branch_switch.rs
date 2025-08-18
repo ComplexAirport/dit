@@ -5,7 +5,8 @@ use crate::managers::index::IndexMgr;
 use crate::managers::branch::BranchMgr;
 use crate::managers::ignore::IgnoreMgr;
 use crate::errors::{BranchError, DitResult};
-use crate::helpers::{create_file_all, read_to_string, write_to_file, copy_file};
+use crate::helpers::{create_file_all, read_to_string};
+use std::fs;
 use std::collections::BTreeMap;
 use rayon::prelude::*;
 
@@ -30,11 +31,11 @@ impl BranchMgr {
 
         match &self.curr_commit {
             None => {
-                write_to_file(&path, "")?;
+                fs::write(&path, "")?;
             }
 
             Some(curr_commit) => {
-                write_to_file(&path, curr_commit)?;
+                fs::write(&path, curr_commit)?;
             }
         }
 
@@ -80,10 +81,11 @@ impl BranchMgr {
 
         // Create the files in the commit
         files.into_par_iter()
-            .try_for_each(|(rel_path, entry)| {
+            .try_for_each(|(rel_path, entry)| -> DitResult<()> {
                 create_file_all(&rel_path)?;
                 let src = blob_mgr.get_blob_path(entry.hash);
-                copy_file(&src, &rel_path)
+                fs::copy(&src, &rel_path)?;
+                Ok(())
             })?;
 
         // Set heads to the branch

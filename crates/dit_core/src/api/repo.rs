@@ -1,7 +1,7 @@
 ﻿use crate::errors::{DitResult, ProjectError};
 use crate::helpers::{get_cwd, path_to_string, resolve_absolute_path};
 use super::dit_component_paths::*;
-use std::fs::{self, File};
+use std::fs::{self, OpenOptions};
 use std::path::{Path, PathBuf};
 
 /// Stores paths of the components of the dit repository
@@ -16,6 +16,7 @@ pub struct Repo {
     branches_root: PathBuf,
     head_file: PathBuf,
     ignore_file: PathBuf,
+    config_file: PathBuf,
 }
 
 /// Constructor
@@ -46,8 +47,9 @@ impl Repo {
         *************************/
         let index_file = repo_path.join(INDEX_FILE);
         let head_file = repo_path.join(HEAD_FILE);
+        let config_file = repo_path.join(CONFIG_FILE);
         let component_files = [
-            &index_file, &head_file
+            &index_file, &head_file, &config_file,
         ];
 
         for component_dir in component_dirs {
@@ -62,28 +64,26 @@ impl Repo {
         Ok(Self {
             repo_path, dit_root, blobs_root,
             trees_root, index_file, commits_root,
-            branches_root, head_file, ignore_file
+            branches_root, head_file, ignore_file,
+            config_file,
         })
     }
 
     fn init_sub_dir(path: &Path) -> DitResult<()> {
-        if !path.is_dir() {
-            fs::create_dir_all(path)
-                .map_err(|_|
-                    ProjectError::SubDirCreationError(path_to_string(path)))?;
+        match fs::create_dir_all(path) {
+            Ok(_) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
+            Err(e) => Err(e.into()),
         }
-        Ok(())
     }
 
     fn init_sub_file(path: &Path) -> DitResult<()> {
-        if !path.is_file() {
-            // this cannot fail because subdirectories are created
-            // before creating the files
-            File::create(path)
-                .map_err(|_|
-                    ProjectError::SubFileCreationError(path_to_string(path))
-                )?;
-        }
+        OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(path)?;
+
         Ok(())
     }
 }
@@ -133,6 +133,11 @@ impl Repo {
     /// Returns the [`IGNORE_FILE`] path
     pub fn ignore_file(&self) -> &Path {
         &self.ignore_file
+    }
+
+    /// Returns the [`CONFIG_FILE`] path
+    pub fn config_file(&self) -> &Path {
+        &self.config_file
     }
 
     /// Returns the absolute path of a given path.

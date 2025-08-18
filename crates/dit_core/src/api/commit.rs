@@ -4,15 +4,16 @@ use crate::errors::DitResult;
 /// Manipulate commits
 impl Dit {
     /// Creates a commit based on a message and an author
-    pub fn commit<S1: Into<String>, S2: Into<String>>(&mut self, author: S1, message: S2)
-                                                      -> DitResult<()>
+    pub fn commit<S1: Into<String>, S2: Into<String>>(&mut self, message: S1, author: Option<S2>)
+        -> DitResult<()>
     {
         self.commit_mgr().borrow_mut().create_commit(
-            author,
             message,
-            &mut self.tree_mgr().borrow_mut(),
-            &mut self.index_mgr()?.borrow_mut(),
+            author,
+            &self.tree_mgr().borrow_mut(),
+            &self.index_mgr()?.borrow(),
             &mut self.branch_mgr()?.borrow_mut(),
+            &self.config_mgr()?.borrow(),
         )
     }
 

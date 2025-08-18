@@ -8,15 +8,14 @@ pub(super) const DEFAULT_IGNORE_LIST: &[&str] = &[".dit"];
 pub struct IgnoreMgr {
     pub(super) repo: Arc<Repo>,
 
-    /// List of the ignored files and directories (not the ignored patterns)
-    pub(super) ignore: Gitignore,
+    pub(super) ignore: Arc<Gitignore>,
 }
 
 impl IgnoreMgr {
     pub fn from(repo: Arc<Repo>) -> DitResult<Self> {
         let mut ignore_mgr = Self {
             repo,
-            ignore: Gitignore::empty(),
+            ignore: Arc::new(Gitignore::empty()),
         };
 
         Self::load(&mut ignore_mgr)?;
